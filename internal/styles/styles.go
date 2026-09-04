@@ -46,6 +46,10 @@ var (
 
 	KeyStyle = lipgloss.NewStyle().
 			Bold(true)
+
+	Title = lipgloss.NewStyle().
+		Bold(true).
+		Padding(0)
 )
 
 func Key(key, action string) string {

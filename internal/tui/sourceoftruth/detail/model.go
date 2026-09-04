@@ -7,6 +7,7 @@ type Focus int
 const (
 	FocusSidebar Focus = iota
 	FocusContent
+	FocusNewVault
 )
 
 type Model struct {
@@ -21,8 +22,7 @@ type Model struct {
 	Focus  Focus
 	Active bool
 
-	AddingVault bool
-	VaultName   string
+	VaultName string
 }
 
 func New() Model {

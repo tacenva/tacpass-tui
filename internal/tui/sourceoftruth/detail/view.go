@@ -69,6 +69,18 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) viewVault() string {
+	if m.Focus == FocusNewVault {
+		return styles.MainContent.Render(
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				styles.Title.Render("Add Vault"),
+				"",
+				styles.Normal.Render("Name"),
+				"> "+m.VaultName+"_",
+			),
+		)
+	}
+
 	var rows []string
 
 	for i, vault := range m.Vaults {
@@ -96,9 +108,9 @@ func (m Model) viewVault() string {
 		)
 	}
 
-	addVault := "+ Add Vault"
+	addVault := "+ New Vault"
 
-	if m.Cursor == len(m.Vaults) {
+	if m.Cursor == len(m.Vaults) && m.Focus == FocusContent {
 		addVault = styles.Selected.Render("> Add Vault")
 	} else {
 		addVault = styles.Muted.Render(addVault)
@@ -110,7 +122,8 @@ func (m Model) viewVault() string {
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			rows...,
-		))
+		),
+	)
 }
 
 func (m Model) Breadcrumb() []string {
@@ -121,13 +134,34 @@ func (m Model) Breadcrumb() []string {
 }
 
 func (m Model) Navigation() string {
-	content := styles.NavigationItems(
-		m.Width,
-		styles.Key("↑↓", "Navigate"),
-		styles.Key("↵", "Select"),
-		styles.Key("Esc", "Back"),
-		styles.Key("q", "Quit"),
-	)
+	var content string
+	switch m.Focus {
+	case FocusSidebar:
+		content = styles.NavigationItems(
+			m.Width,
+			styles.Key("↑↓", "Navigate"),
+			styles.Key("↵", "Select"),
+			styles.Key("Esc", "Back"),
+			styles.Key("q", "Quit"),
+		)
+
+	case FocusContent:
+		content = styles.NavigationItems(
+			m.Width,
+			styles.Key("↑↓", "Navigate"),
+			styles.Key("↵", "Select"),
+			styles.Key("Del", "Delete"),
+			styles.Key("Esc", "Back"),
+			styles.Key("q", "Quit"),
+		)
+
+	case FocusNewVault:
+		content = styles.NavigationItems(
+			m.Width,
+			styles.Key("↵", "Save"),
+			styles.Key("Esc", "Back"),
+		)
+	}
 
 	return styles.Navigation.
 		Width(m.Width).
