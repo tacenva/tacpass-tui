@@ -1,0 +1,19 @@
+{
+  "algorithm": {
+    "kdf": "argon2id",
+    "cipher": "aes-256-gcm"
+  },
+  "kdf": {
+    "salt": "YB2t68rJd9ccDxFFzpEJGQ==",
+    "memory": 65536,
+    "iterations": 3,
+    "parallelism": 2
+  },
+  "verifier": "X1lVdTvkIgnVss9W3CcVtOksdjsjLJl+p2COrhCxDbKLCTUYuyMnRG177UqyL5knpPgq8lI=",
+  "records": [
+    {
+      "id": "01M1PC82T283X0VMSX81DDFAYJ",
+      "data": "+ysQV6U1sfKVa6UVfcs7/QFd/hHyJ2u2UwZL/5WV+j2HGexAabNc3txHoXBdIpDxlQdwrHMsou2ufdxynR5/+OW2ZA/CaqNdE+njhIjlxsCyfylNhku4u/tBPnis16mzMiZjZ6cf/UdojMvUHAr9DApoV9hJ1Plq7rHmcVvfLFCr6/oh53Fg3JW4Qpo8qGqvFPHf1RewDwxE/jutFL9RxGzzQbiNjk7Q/nRZ2nIbtitN22Xit7tPZnVVkMlKC55da2wmczhMiBQAXnOB8AQCqmJKqjysgCnc6hKbibnKoKpRDtwlK7fZ4A83QVV700QTOTAO2PhFr1wePgHkGdvV4HGDLRvdKceksb+UieSavOxZbEY/CX7YnljnDP97Q83GEYF2vmxMgGc="
+    }
+  ]
+}
