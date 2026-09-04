@@ -2,29 +2,27 @@ package sourceoftruth
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 )
-
-type SoTLoadedMsg struct {
-	SoTList []entity.SourceOfTruth
-}
 
 func InitCmd() tea.Cmd {
 	return nil
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if m.Detail.Active {
+		updated, cmd := m.Detail.Update(msg)
+		m.Detail = updated
+		return m, cmd
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
 
-	case SoTLoadedMsg:
-		m.SoTList = msg.SoTList
-
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
+		case "esc", "q", "ctrl+c":
 			return m, tea.Quit
 
 		case "up", "k":
@@ -38,20 +36,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 
 		case "enter":
-			// nanti buka detail/edit
+			if len(m.SoTList) == 0 {
+				return m, nil
+			}
+			m.Detail = detail.New()
 		}
 	}
 
 	return m, nil
-}
-
-func (m *Model) Load() error {
-	SoTList, err := m.SoTService.List()
-	if err != nil {
-		return err
-	}
-
-	m.SoTList = SoTList
-
-	return nil
 }

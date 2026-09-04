@@ -11,6 +11,21 @@ func (m Model) View() string {
 	content := m.viewContent()
 	footer := m.viewNavigation()
 
+	contentHeight := m.Height -
+		lipgloss.Height(header) -
+		lipgloss.Height(breadcrumb) -
+		lipgloss.Height(footer) -
+		1
+
+	if contentHeight < 1 {
+		contentHeight = 1
+	}
+
+	content = lipgloss.NewStyle().
+		Height(contentHeight).
+		PaddingLeft(4).
+		Render(content)
+
 	body := lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
@@ -31,12 +46,20 @@ func (m Model) viewHeader() string {
 }
 
 func (m Model) viewBreadcrumb() string {
-	return styles.Breadcrumb.Render(
+	items := []string{
 		"Source of Truth",
-	)
+	}
+	if m.Detail.Active {
+		items = append(items, m.Detail.Breadcrumb()...)
+	}
+	return styles.BreadcrumbItems(items...)
 }
 
 func (m Model) viewContent() string {
+	if m.Detail.Active {
+		return m.Detail.View()
+	}
+
 	header := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		lipgloss.NewStyle().
@@ -88,6 +111,10 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) viewNavigation() string {
+	if m.Detail.Active {
+		return m.Detail.Navigation()
+	}
+
 	content := styles.NavigationItems(
 		m.Width,
 		styles.Key("↑↓", "Navigate"),
