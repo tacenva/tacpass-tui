@@ -2,7 +2,6 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -27,7 +26,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 
 			m.SourceOfTruth, cmd = m.SourceOfTruth.Update(msg)
-
 			return m, cmd
 		}
 	}
@@ -43,16 +41,23 @@ func (m Model) updateLogin(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 	case "enter":
 		err := m.sotService.Access(m.Input)
-		if err == nil {
+		if err != nil {
+			m.ErrorMessage = "Invalid master password"
 			m.Input = ""
-			m.ErrorMessage = ""
-			m.Screen = ScreenSourceOfTruth
-
-			return m, sourceoftruth.InitCmd()
+			return m, nil
 		}
 
-		m.ErrorMessage = "Invalid master password"
 		m.Input = ""
+		m.ErrorMessage = ""
+
+		if err := m.SourceOfTruth.Load(); err != nil {
+			m.ErrorMessage = err.Error()
+			return m, nil
+		}
+
+		m.Screen = ScreenSourceOfTruth
+
+		return m, nil
 
 	case "backspace":
 		runes := []rune(m.Input)

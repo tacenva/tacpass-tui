@@ -2,6 +2,7 @@ package sourceoftruth
 
 import (
 	"errors"
+	"os"
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
@@ -33,7 +34,11 @@ func (s *Service) Access(masterPassword string) error {
 
 	s.sotFile = sotFile
 	if s.sotFile.Count() == 0 {
-		hostname := "archpc"
+		hostname, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+
 		token, keypair, err := s.authService.Initialize(hostname)
 
 		if err != nil {
@@ -69,10 +74,19 @@ func (s *Service) Get(id string) (*entity.SourceOfTruth, error) {
 		return nil, ErrForbidden
 	}
 
-	var sourceOfTruthData entity.SourceOfTruth
-	err := s.sotFile.Find(id, sourceOfTruthData)
+	var sotData entity.SourceOfTruth
+	err := s.sotFile.Find(id, sotData)
 	if err != nil {
 		return nil, err
 	}
-	return &sourceOfTruthData, nil
+	return &sotData, nil
+}
+
+func (s *Service) List() ([]entity.SourceOfTruth, error) {
+	var sotData []entity.SourceOfTruth
+	err := s.sotFile.FindAll(&sotData)
+	if err != nil {
+		return nil, err
+	}
+	return sotData, nil
 }

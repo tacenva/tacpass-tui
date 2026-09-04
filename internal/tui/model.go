@@ -38,12 +38,12 @@ func New(sqliteDB *gorm.DB, tacenvaDB *database.DB) Model {
 	userService := user.NewService(userRepository)
 
 	authService := auth.NewService(userService, permissionService)
+	soTService := SoTService.NewService(tacenvaDB, authService)
 
 	return Model{
-		Screen:     ScreenLogin,
-		sotService: SoTService.NewService(tacenvaDB, authService),
-
-		SourceOfTruth: sourceoftruth.New(),
+		Screen:        ScreenLogin,
+		sotService:    soTService,
+		SourceOfTruth: sourceoftruth.New(soTService),
 	}
 }
 
