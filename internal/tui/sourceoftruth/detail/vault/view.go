@@ -6,6 +6,10 @@ import (
 )
 
 func (m Model) View() string {
+	if m.VaultRecordTUI.Active {
+		return m.VaultRecordTUI.View()
+	}
+
 	if m.Focus == FocusNewVault {
 		return styles.MainContent.Render(
 			lipgloss.JoinVertical(

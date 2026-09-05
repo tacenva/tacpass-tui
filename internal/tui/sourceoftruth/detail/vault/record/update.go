@@ -1,4 +1,4 @@
-package vault
+package vaultrecord
 
 import tea "github.com/charmbracelet/bubbletea"
 
@@ -22,7 +22,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.Cursor++
 			}
 
+		case "p":
+			m.ShowPassword = !m.ShowPassword
+
 		case "esc", "left", "h":
+			m.ShowPassword = false
 			m.Active = false
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-core/vaultaccess"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 )
 
 type Focus int
@@ -29,7 +30,8 @@ type Model struct {
 	VaultList    []entity.Vault
 	VaultService *vault.Service
 
-	context *app.Context
+	context        *app.Context
+	VaultRecordTUI vaultrecord.Model
 }
 
 func New(deps *app.DatabaseDeps, context *app.Context) Model {
@@ -51,6 +53,8 @@ func New(deps *app.DatabaseDeps, context *app.Context) Model {
 			context.PermissionService,
 			vaultaccessService,
 		),
+
+		VaultRecordTUI: vaultrecord.New(),
 	}
 }
 

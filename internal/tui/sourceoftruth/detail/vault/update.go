@@ -5,6 +5,12 @@ import (
 )
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if m.VaultRecordTUI.Active {
+		updated, cmd := m.VaultRecordTUI.Update(msg)
+		m.VaultRecordTUI = updated
+
+		return m, cmd
+	}
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -43,16 +49,11 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// selectedVault := m.VaultList[m.Cursor]
+		selectedVault := m.VaultList[m.Cursor]
+		m.VaultRecordTUI.SelectedVault = &selectedVault
+		m.VaultRecordTUI.Active = true
 
-		// m.Vault = vaultTUI.New()
-		// m.Vault.Vault = selectedVault
-		// m.Vault.Active = true
-		// m.Vault.Cursor = 0
-
-		// return m, nil
-
-		// return m, nil
+		return m, nil
 
 	case "left", "h", "esc":
 		m.Focus = FocusNone

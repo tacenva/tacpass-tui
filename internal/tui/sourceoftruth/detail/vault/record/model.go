@@ -1,4 +1,4 @@
-package vault
+package vaultrecord
 
 import (
 	"time"
@@ -12,7 +12,9 @@ type Model struct {
 	Width  int
 	Height int
 
-	Vault   entity.Vault
+	SelectedVault *entity.Vault
+	ShowPassword  bool
+
 	Records []entity.VaultRecord
 	Cursor  int
 }
@@ -50,6 +52,7 @@ func New() Model {
 			},
 		},
 		Cursor: 0,
+		Active: false,
 	}
 }
 
