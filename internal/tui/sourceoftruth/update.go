@@ -2,6 +2,7 @@ package sourceoftruth
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 )
 
@@ -40,8 +41,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				return m, nil
 			}
 			selectedSoT := m.SoTList[m.Cursor]
-			m.Detail = detail.New(m.appDeps, &selectedSoT, m.authService, m.permissionService)
-			m.Detail.Load()
+			m.Detail = detail.New(m.appDeps, &app.Context{
+				SelectedSoT:       &selectedSoT,
+				AuthService:       m.authService,
+				PermissionService: m.permissionService,
+			})
 		}
 	}
 

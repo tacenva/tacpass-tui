@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	appDeps := app.Dependencies{
+	appDeps := app.DatabaseDeps{
 		TacenvaDB: tacenvaDB,
 		SqliteDB:  sqliteDB,
 	}

@@ -2,6 +2,7 @@ package detail
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 )
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
@@ -16,14 +17,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case FocusSidebar:
 			return m.updateSidebar(msg)
 		case FocusContent:
-			return m.updateContent(msg)
-		case FocusNewVault:
-			return m.updateNewVault(msg)
+			updated, cmd := m.vaultTUI.Update(msg)
+			m.vaultTUI = updated
+			if m.vaultTUI.Focus == vaultTUI.FocusNone {
+				m.Focus = FocusSidebar
+				cmd = nil
+			}
+			return m, cmd
 		}
 	}
 
 	return m, nil
 }
+
 func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 
@@ -39,84 +45,10 @@ func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 	case "enter", "right", "l":
 		m.Focus = FocusContent
+		m.vaultTUI.Focus = vaultTUI.FocusContent
 
 	case "esc", "q":
 		m.Active = false
-	}
-
-	return m, nil
-}
-
-func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
-	if m.Focus == FocusNewVault {
-
-	}
-
-	switch msg.String() {
-
-	case "up", "k":
-		if m.Cursor > 0 {
-			m.Cursor--
-		}
-
-	case "down", "j":
-		if m.Cursor < len(m.VaultList) {
-			m.Cursor++
-		}
-
-	case "enter":
-		if m.SidebarCursor == 0 {
-			if m.Cursor == len(m.VaultList) {
-				m.Focus = FocusNewVault
-				m.VaultName = ""
-				return m, nil
-			}
-
-			// TODO: Open selected Vault
-		}
-
-	case "left", "h", "esc":
-		m.Focus = FocusSidebar
-
-	case "q":
-		m.Active = false
-	}
-
-	return m, nil
-}
-
-func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
-	switch msg.String() {
-
-	case "esc", "ctrl+c":
-		m.Focus = FocusContent
-		m.VaultName = ""
-
-	case "enter":
-		if m.VaultName == "" {
-			return m, nil
-		}
-
-		vaultData, err := m.VaultService.Create(m.VaultName, m.SelectedSoT.AuthToken)
-		if err != nil {
-			return m, nil
-		}
-
-		m.VaultList = append(m.VaultList, *vaultData)
-
-		// m.Cursor = len(m.VaultList) - 1
-		m.VaultName = ""
-		m.Focus = FocusContent
-
-	case "backspace":
-		if len(m.VaultName) > 0 {
-			m.VaultName = m.VaultName[:len(m.VaultName)-1]
-		}
-
-	default:
-		if len(msg.Runes) > 0 {
-			m.VaultName += string(msg.Runes)
-		}
 	}
 
 	return m, nil

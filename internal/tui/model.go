@@ -30,7 +30,7 @@ type Model struct {
 	SourceOfTruth sourceoftruth.Model
 }
 
-func New(deps *app.Dependencies) Model {
+func New(deps *app.DatabaseDeps) Model {
 	permissionRepository := permission.NewRepository(deps.SqliteDB)
 	permissionService := permission.NewService(permissionRepository)
 	userRepository := user.NewRepository(deps.SqliteDB)

@@ -1,13 +1,8 @@
 package detail
 
 import (
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-core/permission"
-	"github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-core/vaultaccess"
 	"github.com/tacenva/tacpass-tui/internal/app"
-	tuiEntity "github.com/tacenva/tacpass-tui/internal/entity"
+	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 )
 
 type Focus int
@@ -28,37 +23,21 @@ type Model struct {
 	Focus  Focus
 	Active bool
 
-	VaultName string
+	context *app.Context
 
-	VaultList    []entity.Vault
-	VaultService *vault.Service
-
-	SelectedSoT *tuiEntity.SourceOfTruth
+	vaultTUI vaultTUI.Model
 }
 
-func New(deps *app.Dependencies, SelectedSoT *tuiEntity.SourceOfTruth, authService *auth.Service, permissionService *permission.Service) Model {
-	vaultRepository := vault.NewRepository(deps.SqliteDB)
-	vaultaccessRepository := vaultaccess.NewRepository(deps.SqliteDB)
-	vaultaccessService := vaultaccess.NewService(vaultaccessRepository)
+func New(dbDeps *app.DatabaseDeps, context *app.Context) Model {
+	v := vaultTUI.New(dbDeps, context)
+	v.Load()
 
 	return Model{
 		Active:        true,
 		SidebarCursor: 0,
 		Cursor:        0,
 
-		SelectedSoT: SelectedSoT,
-
-		VaultList:    []entity.Vault{},
-		VaultService: vault.NewService(vaultRepository, deps.TacenvaDB, authService, permissionService, vaultaccessService),
+		context:  context,
+		vaultTUI: v,
 	}
-}
-
-func (m *Model) Load() error {
-	vaultList, err := m.VaultService.List()
-	if err != nil {
-		return err
-	}
-
-	m.VaultList = vaultList
-	return nil
 }
