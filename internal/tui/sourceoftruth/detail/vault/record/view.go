@@ -1,14 +1,45 @@
 package vaultrecord
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tacenva/tacpass-tui/internal/styles"
 )
 
 func (m Model) View() string {
+	switch m.Focus {
+	case FocusEdit:
+		return m.viewEdit("Edit Credential")
+
+	case FocusNew:
+		return m.viewEdit("New Credential")
+
+	default:
+		return m.viewContent()
+	}
+}
+
+func (m Model) viewContent() string {
 	var rows []string
+
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("12")).
+		Bold(true)
+
+	passwordStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("10"))
+
+	endpointStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("7"))
+
+	expiredStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("8"))
+
+	contentWidth := m.Width - 4
+	if contentWidth < 40 {
+		contentWidth = 40
+	}
 
 	for i, record := range m.Records {
 		selected := i == m.Cursor
@@ -18,44 +49,97 @@ func (m Model) View() string {
 			prefix = "> "
 		}
 
-		name := prefix + record.Name
-
-		if selected {
-			name = styles.Selected.Render(name)
-
-			password := "********"
-			if m.ShowPassword {
-				password = record.Password
-			}
-
-			detail := lipgloss.JoinVertical(
-				lipgloss.Left,
-				styles.Normal.Render(fmt.Sprintf("Endpoint : %s", record.Endpoint)),
-				styles.Normal.Render(fmt.Sprintf("Password : %s", password)),
-				styles.Normal.Render(fmt.Sprintf("Expired  : %s", record.ExpiredAt)),
-			)
-
-			rows = append(
-				rows,
-				name,
-				"  "+detail,
-				"",
-			)
-
-			continue
+		password := "••••••••"
+		if selected && m.ShowPassword {
+			password = record.Password
 		}
+
+		nameWidth := lipgloss.Width(record.Name)
+		passwordWidth := lipgloss.Width(password)
+
+		gap := contentWidth - nameWidth - passwordWidth
+		if gap < 2 {
+			gap = 2
+		}
+
+		header := prefix +
+			nameStyle.Render(record.Name) +
+			strings.Repeat(" ", gap) +
+			passwordStyle.Render(password)
+
+		endpoint := strings.TrimPrefix(record.Endpoint, "https://")
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+
+		detail := "  " +
+			endpointStyle.Render(endpoint) +
+			"    " +
+			expiredStyle.Render(
+				"Exp: "+record.ExpiredAt.Format("02 Jan 2006"),
+			)
 
 		rows = append(
 			rows,
-			styles.Normal.Render(name),
+			header,
+			detail,
+			"",
 		)
 	}
 
-	if len(rows) == 0 {
+	if len(m.Records) == 0 {
 		rows = append(
 			rows,
-			styles.Muted.Render("No record found."),
+			styles.Muted.Render("No credential found."),
+			"",
 		)
+	}
+
+	newCredential := "+ New Credential"
+
+	if m.Cursor == len(m.Records) {
+		newCredential = "> Add Credential"
+	}
+
+	rows = append(
+		rows,
+		"",
+		styles.Selected.Render(newCredential),
+	)
+
+	return styles.MainContent.Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			rows...,
+		),
+	)
+}
+
+func (m Model) viewEdit(title string) string {
+	rows := []string{
+		styles.Title.Render(title),
+		"",
+		m.viewEditField(
+			"Name",
+			m.EditName,
+			FieldName,
+		),
+		"",
+		m.viewEditField(
+			"Endpoint",
+			m.EditEndpoint,
+			FieldEndpoint,
+		),
+		"",
+		m.viewEditField(
+			"Password",
+			m.EditPassword,
+			FieldPassword,
+		),
+		"",
+		m.viewEditField(
+			"Expired At",
+			m.EditExpiredAt,
+			FieldExpiredAt,
+		),
 	}
 
 	return styles.MainContent.Render(
@@ -66,7 +150,43 @@ func (m Model) View() string {
 	)
 }
 
+func (m Model) viewEditField(
+	label string,
+	value string,
+	field EditField,
+) string {
+	prefix := "  "
+
+	if m.EditField == field {
+		prefix = "> "
+	}
+
+	labelView := styles.Normal.Render(
+		prefix + label,
+	)
+
+	valueView := styles.Normal.Render(
+		"    " + value,
+	)
+
+	if m.EditField == field {
+		valueView = styles.Selected.Render(
+			"    " + value + "_",
+		)
+	}
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		labelView,
+		valueView,
+	)
+}
+
 func (m Model) Breadcrumb() []string {
+	if m.SelectedVault == nil {
+		return []string{"Vault"}
+	}
+
 	return []string{
 		"Vault",
 		m.SelectedVault.Name,
@@ -74,10 +194,26 @@ func (m Model) Breadcrumb() []string {
 }
 
 func (m Model) Navigation() string {
+	if m.Focus == FocusEdit || m.Focus == FocusNew {
+		content := styles.NavigationItems(
+			m.Width,
+			styles.Key("Tab", "Next Field"),
+			styles.Key("↑↓", "Navigate"),
+			styles.Key("Enter", "Save"),
+			styles.Key("Esc", "Cancel"),
+			styles.Key("p", "Show Password"),
+		)
+
+		return styles.Navigation.
+			Width(m.Width).
+			Render(content)
+	}
+
 	content := styles.NavigationItems(
 		m.Width,
 		styles.Key("↑↓", "Navigate"),
-		styles.Key("↵", "Select"),
+		styles.Key("↵", "Edit"),
+		styles.Key("n", "New"),
 		styles.Key("p", "Show Password"),
 		styles.Key("Esc", "Back"),
 		styles.Key("q", "Quit"),
