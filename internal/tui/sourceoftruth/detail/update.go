@@ -2,7 +2,6 @@ package detail
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/tacpass-core/entity"
 )
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
@@ -61,13 +60,13 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 	case "down", "j":
-		if m.Cursor < len(m.Vaults) {
+		if m.Cursor < len(m.VaultList) {
 			m.Cursor++
 		}
 
 	case "enter":
 		if m.SidebarCursor == 0 {
-			if m.Cursor == len(m.Vaults) {
+			if m.Cursor == len(m.VaultList) {
 				m.Focus = FocusNewVault
 				m.VaultName = ""
 				return m, nil
@@ -98,12 +97,14 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		m.Vaults = append(m.Vaults, entity.Vault{
-			ID:   "vault-new",
-			Name: m.VaultName,
-		})
+		vaultData, err := m.VaultService.Create(m.VaultName, m.SelectedSoT.AuthToken)
+		if err != nil {
+			return m, nil
+		}
 
-		m.Cursor = len(m.Vaults) - 1
+		m.VaultList = append(m.VaultList, *vaultData)
+
+		// m.Cursor = len(m.VaultList) - 1
 		m.VaultName = ""
 		m.Focus = FocusContent
 

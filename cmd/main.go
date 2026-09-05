@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/tui"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -41,8 +42,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	appDeps := app.Dependencies{
+		TacenvaDB: tacenvaDB,
+		SqliteDB:  sqliteDB,
+	}
+
 	p := tea.NewProgram(
-		tui.New(sqliteDB, tacenvaDB),
+		tui.New(&appDeps),
 		tea.WithAltScreen(),
 	)
 

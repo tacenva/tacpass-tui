@@ -1,6 +1,14 @@
 package detail
 
-import "github.com/tacenva/tacpass-core/entity"
+import (
+	"github.com/tacenva/tacpass-core/auth"
+	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/permission"
+	"github.com/tacenva/tacpass-core/vault"
+	"github.com/tacenva/tacpass-core/vaultaccess"
+	"github.com/tacenva/tacpass-tui/internal/app"
+	tuiEntity "github.com/tacenva/tacpass-tui/internal/entity"
+)
 
 type Focus int
 
@@ -15,35 +23,42 @@ type Model struct {
 	Height int
 
 	SidebarCursor int
-
-	Vaults []entity.Vault
-	Cursor int
+	Cursor        int
 
 	Focus  Focus
 	Active bool
 
 	VaultName string
+
+	VaultList    []entity.Vault
+	VaultService *vault.Service
+
+	SelectedSoT *tuiEntity.SourceOfTruth
 }
 
-func New() Model {
+func New(deps *app.Dependencies, SelectedSoT *tuiEntity.SourceOfTruth, authService *auth.Service, permissionService *permission.Service) Model {
+	vaultRepository := vault.NewRepository(deps.SqliteDB)
+	vaultaccessRepository := vaultaccess.NewRepository(deps.SqliteDB)
+	vaultaccessService := vaultaccess.NewService(vaultaccessRepository)
+
 	return Model{
 		Active:        true,
 		SidebarCursor: 0,
 		Cursor:        0,
 
-		Vaults: []entity.Vault{
-			{
-				ID:   "vault-001",
-				Name: "Personal",
-			},
-			{
-				ID:   "vault-002",
-				Name: "Work",
-			},
-			{
-				ID:   "vault-003",
-				Name: "Infrastructure",
-			},
-		},
+		SelectedSoT: SelectedSoT,
+
+		VaultList:    []entity.Vault{},
+		VaultService: vault.NewService(vaultRepository, deps.TacenvaDB, authService, permissionService, vaultaccessService),
 	}
+}
+
+func (m *Model) Load() error {
+	vaultList, err := m.VaultService.List()
+	if err != nil {
+		return err
+	}
+
+	m.VaultList = vaultList
+	return nil
 }

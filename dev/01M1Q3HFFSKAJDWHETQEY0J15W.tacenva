@@ -1,0 +1,14 @@
+{
+  "algorithm": {
+    "kdf": "argon2id",
+    "cipher": "aes-256-gcm"
+  },
+  "kdf": {
+    "salt": "Dzi2s0yaFWM1VoUUzMH+Vw==",
+    "memory": 65536,
+    "iterations": 3,
+    "parallelism": 2
+  },
+  "verifier": "8W5GHavLrG988BF0+UlDZo6Ne4Qtrv+RilLVlIEYQ8uVVbCLgnE3t+kGPDwkJewV6wbn6Gg=",
+  "records": []
+}

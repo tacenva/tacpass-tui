@@ -20,7 +20,7 @@ func (m Model) View() string {
 func (m Model) viewSidebar() string {
 	items := []string{
 		"Vault",
-		"Permission",
+		"Access Control",
 		"Setting",
 	}
 
@@ -83,16 +83,21 @@ func (m Model) viewVault() string {
 
 	var rows []string
 
-	for i, vault := range m.Vaults {
-		prefix := "  "
+	for i, vault := range m.VaultList {
+		selected := i == m.Cursor && m.Focus == FocusContent
 
-		if i == m.Cursor && m.Focus == FocusContent {
+		prefix := ""
+		if m.Focus == FocusContent {
+			prefix = "  "
+		}
+
+		if selected {
 			prefix = "> "
 		}
 
 		row := prefix + vault.Name
 
-		if i == m.Cursor && m.Focus == FocusContent {
+		if selected {
 			row = styles.Selected.Render(row)
 		} else {
 			row = styles.Normal.Render(row)
@@ -110,7 +115,7 @@ func (m Model) viewVault() string {
 
 	addVault := "+ New Vault"
 
-	if m.Cursor == len(m.Vaults) && m.Focus == FocusContent {
+	if m.Cursor == len(m.VaultList) && m.Focus == FocusContent {
 		addVault = styles.Selected.Render("> Add Vault")
 	} else {
 		addVault = styles.Muted.Render(addVault)

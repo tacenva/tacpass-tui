@@ -39,7 +39,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			if len(m.SoTList) == 0 {
 				return m, nil
 			}
-			m.Detail = detail.New()
+			selectedSoT := m.SoTList[m.Cursor]
+			m.Detail = detail.New(m.appDeps, &selectedSoT, m.authService, m.permissionService)
+			m.Detail.Load()
 		}
 	}
 

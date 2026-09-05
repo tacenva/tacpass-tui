@@ -2,13 +2,12 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/permission"
 	"github.com/tacenva/tacpass-core/user"
+	"github.com/tacenva/tacpass-tui/internal/app"
 	SoTService "github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth"
-	"gorm.io/gorm"
 )
 
 type Screen int
@@ -31,19 +30,19 @@ type Model struct {
 	SourceOfTruth sourceoftruth.Model
 }
 
-func New(sqliteDB *gorm.DB, tacenvaDB *database.DB) Model {
-	permissionRepository := permission.NewRepository(sqliteDB)
+func New(deps *app.Dependencies) Model {
+	permissionRepository := permission.NewRepository(deps.SqliteDB)
 	permissionService := permission.NewService(permissionRepository)
-	userRepository := user.NewRepository(sqliteDB)
+	userRepository := user.NewRepository(deps.SqliteDB)
 	userService := user.NewService(userRepository)
 
 	authService := auth.NewService(userService, permissionService)
-	soTService := SoTService.NewService(tacenvaDB, authService)
+	soTService := SoTService.NewService(deps.TacenvaDB, authService)
 
 	return Model{
 		Screen:        ScreenLogin,
 		sotService:    soTService,
-		SourceOfTruth: sourceoftruth.New(soTService),
+		SourceOfTruth: sourceoftruth.New(deps, soTService, authService, permissionService),
 	}
 }
 

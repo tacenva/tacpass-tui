@@ -1,6 +1,9 @@
 package sourceoftruth
 
 import (
+	"github.com/tacenva/tacpass-core/auth"
+	"github.com/tacenva/tacpass-core/permission"
+	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
@@ -15,22 +18,28 @@ type Model struct {
 	SoTList    []entity.SourceOfTruth
 
 	Cursor int
+
+	appDeps           *app.Dependencies
+	authService       *auth.Service
+	permissionService *permission.Service
 }
 
-func New(SoTService *sourceoftruth.Service) Model {
+func New(appDeps *app.Dependencies, SoTService *sourceoftruth.Service, authService *auth.Service, permissionService *permission.Service) Model {
 	return Model{
-		SoTService: SoTService,
-		Cursor:     0,
+		appDeps:           appDeps,
+		authService:       authService,
+		permissionService: permissionService,
+		SoTService:        SoTService,
+		Cursor:            0,
 	}
 }
 
 func (m *Model) Load() error {
-	SoTList, err := m.SoTService.List()
+	soTList, err := m.SoTService.List()
 	if err != nil {
 		return err
 	}
 
-	m.SoTList = SoTList
-
+	m.SoTList = soTList
 	return nil
 }
