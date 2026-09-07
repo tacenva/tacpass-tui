@@ -4,6 +4,9 @@ import (
 	"time"
 
 	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/util/keyring"
+	vaultCore "github.com/tacenva/tacpass-core/vault"
+	"github.com/tacenva/tacpass-tui/internal/app"
 )
 
 type Focus int
@@ -44,46 +47,39 @@ type Model struct {
 	EditEndpoint  string
 	EditPassword  string
 	EditExpiredAt string
+
+	VaultService *vaultCore.Service
+
+	context *app.Context
 }
 
-func New() Model {
+func New(context *app.Context, VaultService *vaultCore.Service) Model {
 	return Model{
-		Records: []entity.VaultRecord{
-			{
-				ID:        "01K00000000000000000000001",
-				Name:      "GitHub",
-				Endpoint:  "https://github.com",
-				Password:  "github-password",
-				ExpiredAt: time.Now().AddDate(0, 1, 0),
-			},
-			{
-				ID:        "01K00000000000000000000002",
-				Name:      "GitLab",
-				Endpoint:  "https://gitlab.com",
-				Password:  "gitlab-password",
-				ExpiredAt: time.Now().AddDate(0, 2, 0),
-			},
-			{
-				ID:        "01K00000000000000000000003",
-				Name:      "Production Server",
-				Endpoint:  "https://prod.example.com",
-				Password:  "production-password",
-				ExpiredAt: time.Now().AddDate(0, 3, 0),
-			},
-			{
-				ID:        "01K00000000000000000000004",
-				Name:      "Database",
-				Endpoint:  "postgres://db.example.com:5432",
-				Password:  "database-password",
-				ExpiredAt: time.Now().AddDate(0, 1, 15),
-			},
-		},
-		Cursor: 0,
-		Focus:  FocusContent,
-		Active: false,
+		Records: []entity.VaultRecord{},
+		Cursor:  0,
+		Focus:   FocusContent,
+		Active:  false,
+
+		VaultService: VaultService,
+		context:      context,
 	}
 }
 
+func (m *Model) Load(selectedVault *entity.Vault) error {
+	vaultRecords, err := m.VaultService.DecryptedRecordList(
+		m.context.AuthUser,
+		selectedVault.ID,
+		(*keyring.KeyPair)(&m.context.SelectedSoT.KeyPair),
+	)
+	if err != nil {
+		return err
+	}
+
+	m.SelectedVault = selectedVault
+	m.Records = vaultRecords
+
+	return nil
+}
 func (m Model) Selected() *entity.VaultRecord {
 	if len(m.Records) == 0 {
 		return nil
@@ -107,7 +103,7 @@ func (m *Model) startEdit() {
 	m.EditName = record.Name
 	m.EditEndpoint = record.Endpoint
 	m.EditPassword = record.Password
-	m.EditExpiredAt = record.ExpiredAt.Format("2006-01-02 15:04")
+	// m.EditExpiredAt = record.ExpiredAt.Format("2006-01-02 15:04")
 
 	m.ShowPassword = false
 	m.Focus = FocusEdit
@@ -145,8 +141,13 @@ func (m *Model) saveEdit() {
 	record.Endpoint = m.EditEndpoint
 	record.Password = m.EditPassword
 
-	if expiredAt, err := parseExpiredAt(m.EditExpiredAt); err == nil {
-		record.ExpiredAt = expiredAt
+	// if expiredAt, err := parseExpiredAt(m.EditExpiredAt); err == nil {
+	// 	record.ExpiredAt = expiredAt
+	// }
+
+	_, err := m.VaultService.UpdateRecord(m.context.AuthUser, m.SelectedVault.ID, record, &m.context.SelectedSoT.KeyPair)
+	if err != nil {
+		panic(err)
 	}
 
 	m.clearForm()
@@ -158,20 +159,43 @@ func (m *Model) saveNew() {
 		return
 	}
 
-	expiredAt, err := parseExpiredAt(m.EditExpiredAt)
-	if err != nil {
-		return
+	// expiredAt, err := parseExpiredAt(m.EditExpiredAt)
+	// if err != nil {
+	// 	return
+	// }
+	if m.VaultService == nil {
+		panic("VaultService is nil")
 	}
 
+	if m.context == nil {
+		panic("context is nil")
+	}
+
+	if m.context.AuthUser == nil {
+		panic("AuthUser is nil")
+	}
+
+	if m.SelectedVault == nil {
+		panic("SelectedVault is nil")
+	}
 	record := entity.VaultRecord{
-		ID:        newID(),
-		Name:      m.EditName,
-		Endpoint:  m.EditEndpoint,
-		Password:  m.EditPassword,
-		ExpiredAt: expiredAt,
+		Name:     m.EditName,
+		Endpoint: m.EditEndpoint,
+		Password: m.EditPassword,
+		// ExpiredAt: expiredAt,
 	}
 
-	m.Records = append(m.Records, record)
+	newRecord, err := m.VaultService.AppendRecord(
+		m.context.AuthUser,
+		m.SelectedVault.ID,
+		&record,
+		&m.context.SelectedSoT.KeyPair,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	m.Records = append(m.Records, *newRecord)
 	m.Cursor = len(m.Records) - 1
 
 	m.clearForm()
@@ -192,8 +216,4 @@ func parseExpiredAt(value string) (time.Time, error) {
 	}
 
 	return time.Parse("2006-01-02 15:04", value)
-}
-
-func newID() string {
-	return time.Now().Format("20060102150405.000000000")
 }

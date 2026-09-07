@@ -34,10 +34,15 @@ type Model struct {
 	VaultRecordTUI vaultrecord.Model
 }
 
-func New(deps *app.DatabaseDeps, context *app.Context) Model {
-	vaultRepository := vault.NewRepository(deps.SqliteDB)
-	vaultaccessRepository := vaultaccess.NewRepository(deps.SqliteDB)
+func New(dbDeps *app.DatabaseDeps, context *app.Context) Model {
+	vaultRepository := vault.NewRepository(dbDeps.SqliteDB)
+	vaultaccessRepository := vaultaccess.NewRepository(dbDeps.SqliteDB)
 	vaultaccessService := vaultaccess.NewService(vaultaccessRepository)
+	vaultService := vault.NewService(
+		vaultRepository,
+		dbDeps.TacenvaDB,
+		vaultaccessService,
+	)
 
 	return Model{
 		Active: true,
@@ -45,21 +50,15 @@ func New(deps *app.DatabaseDeps, context *app.Context) Model {
 
 		context: context,
 
-		VaultList: []entity.Vault{},
-		VaultService: vault.NewService(
-			vaultRepository,
-			deps.TacenvaDB,
-			context.AuthService,
-			context.PermissionService,
-			vaultaccessService,
-		),
+		VaultList:    []entity.Vault{},
+		VaultService: vaultService,
 
-		VaultRecordTUI: vaultrecord.New(),
+		VaultRecordTUI: vaultrecord.New(context, vaultService),
 	}
 }
 
 func (m *Model) Load() error {
-	vaultList, err := m.VaultService.List()
+	vaultList, err := m.VaultService.VaultList(m.context.AuthUser)
 	if err != nil {
 		return err
 	}

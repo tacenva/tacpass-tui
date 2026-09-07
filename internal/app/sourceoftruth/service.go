@@ -6,6 +6,7 @@ import (
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
+	"github.com/tacenva/tacpass-core/util/keyring"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 )
 
@@ -49,7 +50,7 @@ func (s *Service) Access(masterPassword string) error {
 			Hostname:  hostname,
 			Address:   "localhost",
 			AuthToken: token,
-			KeyPair:   entity.KeyPair(*keypair),
+			KeyPair:   *keypair,
 		}); err != nil {
 			return err
 		}
@@ -58,7 +59,7 @@ func (s *Service) Access(masterPassword string) error {
 	return nil
 }
 
-func (s *Service) Create(hostname string, address string, keypair entity.KeyPair) error {
+func (s *Service) Create(hostname string, address string, keypair keyring.KeyPair) error {
 	if s.sotFile == nil {
 		return ErrForbidden
 	}

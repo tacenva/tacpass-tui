@@ -2,8 +2,7 @@ package app
 
 import (
 	"github.com/tacenva/database"
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/permission"
+	coreEntity "github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 	"gorm.io/gorm"
 )
@@ -14,7 +13,8 @@ type DatabaseDeps struct {
 }
 
 type Context struct {
-	SelectedSoT       *entity.SourceOfTruth
-	AuthService       *auth.Service
-	PermissionService *permission.Service
+	SelectedSoT *entity.SourceOfTruth
+	AuthUser    *coreEntity.User
+	// AuthService       *auth.Service
+	// PermissionService *permission.Service
 }

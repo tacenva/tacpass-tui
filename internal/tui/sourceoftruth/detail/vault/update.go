@@ -50,7 +50,10 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 		selectedVault := m.VaultList[m.Cursor]
-		m.VaultRecordTUI.SelectedVault = &selectedVault
+
+		if err := m.VaultRecordTUI.Load(&selectedVault); err != nil {
+			panic(err)
+		}
 		m.VaultRecordTUI.Active = true
 
 		return m, nil
@@ -77,7 +80,7 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		vaultData, err := m.VaultService.Create(m.VaultName, m.context.SelectedSoT.AuthToken)
+		vaultData, err := m.VaultService.Create(m.context.AuthUser, m.VaultName, &m.context.SelectedSoT.KeyPair)
 		if err != nil {
 			return m, nil
 		}

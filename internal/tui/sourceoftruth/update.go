@@ -41,10 +41,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				return m, nil
 			}
 			selectedSoT := m.SoTList[m.Cursor]
+			authUser, err := m.authService.GetUserData(selectedSoT.AuthToken)
+			if err != nil {
+				return m, nil
+			}
+
 			m.Detail = detail.New(m.appDeps, &app.Context{
-				SelectedSoT:       &selectedSoT,
-				AuthService:       m.authService,
-				PermissionService: m.permissionService,
+				SelectedSoT: &selectedSoT,
+				AuthUser:    authUser,
+				// AuthService:       m.authService,
+				// PermissionService: m.permissionService,
 			})
 		}
 	}
