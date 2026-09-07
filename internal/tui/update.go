@@ -15,19 +15,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.SourceOfTruth.Height = msg.Height
 
 		return m, nil
+	}
 
-	case tea.KeyMsg:
-		switch m.Screen {
+	switch m.Screen {
 
-		case ScreenLogin:
-			return m.updateLogin(msg)
-
-		case ScreenSourceOfTruth:
-			var cmd tea.Cmd
-
-			m.SourceOfTruth, cmd = m.SourceOfTruth.Update(msg)
-			return m, cmd
+	case ScreenLogin:
+		keyMsg, ok := msg.(tea.KeyMsg)
+		if !ok {
+			return m, nil
 		}
+
+		return m.updateLogin(keyMsg)
+
+	case ScreenSourceOfTruth:
+		var cmd tea.Cmd
+
+		m.SourceOfTruth, cmd = m.SourceOfTruth.Update(msg)
+
+		return m, cmd
 	}
 
 	return m, nil
@@ -40,6 +45,7 @@ func (m Model) updateLogin(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case "enter":
+		masterKey := m.Input
 		err := m.sotService.Access(m.Input)
 		if err != nil {
 			m.ErrorMessage = "Invalid master password"
@@ -50,7 +56,7 @@ func (m Model) updateLogin(msg tea.KeyMsg) (Model, tea.Cmd) {
 		m.Input = ""
 		m.ErrorMessage = ""
 
-		if err := m.SourceOfTruth.Load(); err != nil {
+		if err := m.SourceOfTruth.Load(masterKey); err != nil {
 			m.ErrorMessage = err.Error()
 			return m, nil
 		}

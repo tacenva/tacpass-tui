@@ -4,9 +4,8 @@ import (
 	"time"
 
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-core/util/keyring"
-	vaultCore "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/app/vault"
 )
 
 type Focus int
@@ -33,8 +32,8 @@ type Model struct {
 	Width  int
 	Height int
 
-	SelectedVault *entity.Vault
-	ShowPassword  bool
+	SelectedVaultAccess *entity.VaultAccess
+	ShowPassword        bool
 
 	Records []entity.VaultRecord
 	Cursor  int
@@ -48,38 +47,37 @@ type Model struct {
 	EditPassword  string
 	EditExpiredAt string
 
-	VaultService *vaultCore.Service
+	VaultServiceTUI *vault.Service
 
 	context *app.Context
 }
 
-func New(context *app.Context, VaultService *vaultCore.Service) Model {
+func New(context *app.Context, VaultServiceTUI *vault.Service) Model {
 	return Model{
 		Records: []entity.VaultRecord{},
 		Cursor:  0,
 		Focus:   FocusContent,
 		Active:  false,
 
-		VaultService: VaultService,
-		context:      context,
+		VaultServiceTUI: VaultServiceTUI,
+		context:         context,
 	}
 }
 
-func (m *Model) Load(selectedVault *entity.Vault) error {
-	vaultRecords, err := m.VaultService.DecryptedRecordList(
-		m.context.AuthUser,
-		selectedVault.ID,
-		(*keyring.KeyPair)(&m.context.SelectedSoT.KeyPair),
+func (m *Model) Load(selectedVaultAccess *entity.VaultAccess) error {
+	vaultRecords, err := m.VaultServiceTUI.DecryptedRecordList(
+		selectedVaultAccess.VaultID,
 	)
 	if err != nil {
 		return err
 	}
 
-	m.SelectedVault = selectedVault
+	m.SelectedVaultAccess = selectedVaultAccess
 	m.Records = vaultRecords
 
 	return nil
 }
+
 func (m Model) Selected() *entity.VaultRecord {
 	if len(m.Records) == 0 {
 		return nil
@@ -145,7 +143,7 @@ func (m *Model) saveEdit() {
 	// 	record.ExpiredAt = expiredAt
 	// }
 
-	_, err := m.VaultService.UpdateRecord(m.context.AuthUser, m.SelectedVault.ID, record, &m.context.SelectedSoT.KeyPair)
+	_, err := m.VaultServiceTUI.UpdateRecord(m.SelectedVaultAccess.VaultID, record)
 	if err != nil {
 		panic(err)
 	}
@@ -163,21 +161,7 @@ func (m *Model) saveNew() {
 	// if err != nil {
 	// 	return
 	// }
-	if m.VaultService == nil {
-		panic("VaultService is nil")
-	}
 
-	if m.context == nil {
-		panic("context is nil")
-	}
-
-	if m.context.AuthUser == nil {
-		panic("AuthUser is nil")
-	}
-
-	if m.SelectedVault == nil {
-		panic("SelectedVault is nil")
-	}
 	record := entity.VaultRecord{
 		Name:     m.EditName,
 		Endpoint: m.EditEndpoint,
@@ -185,11 +169,9 @@ func (m *Model) saveNew() {
 		// ExpiredAt: expiredAt,
 	}
 
-	newRecord, err := m.VaultService.AppendRecord(
-		m.context.AuthUser,
-		m.SelectedVault.ID,
+	newRecord, err := m.VaultServiceTUI.AppendRecord(
+		m.SelectedVaultAccess.VaultID,
 		&record,
-		&m.context.SelectedSoT.KeyPair,
 	)
 	if err != nil {
 		panic(err)

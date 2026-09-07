@@ -28,9 +28,12 @@ type Model struct {
 	ErrorMessage string
 
 	SourceOfTruth sourceoftruth.Model
+	deps          *app.Deps
 }
 
-func New(deps *app.Deps) Model {
+func New(
+	deps *app.Deps,
+) Model {
 	permissionRepository := permission.NewRepository(deps.SqliteDB)
 	permissionService := permission.NewService(permissionRepository)
 	userRepository := user.NewRepository(deps.SqliteDB)

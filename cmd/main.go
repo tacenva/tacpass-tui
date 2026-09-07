@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-tui/internal/api"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/tui"
@@ -46,10 +47,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	client := api.NewClient()
+
 	appDeps := app.Deps{
 		Config:   cfg,
 		AppDB:    tacenvaDB,
 		SqliteDB: sqliteDB,
+		Client:   client,
 	}
 
 	p := tea.NewProgram(

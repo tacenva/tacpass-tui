@@ -37,21 +37,21 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 	case "down", "j":
-		if m.Cursor < len(m.VaultList) {
+		if m.Cursor < len(m.VaultAccessList) {
 			m.Cursor++
 		}
 
 	case "enter":
-		if m.Cursor == len(m.VaultList) {
+		if m.Cursor == len(m.VaultAccessList) {
 			m.Focus = FocusNewVault
 			m.VaultName = ""
 
 			return m, nil
 		}
 
-		selectedVault := m.VaultList[m.Cursor]
+		selectedVaultAccess := m.VaultAccessList[m.Cursor]
 
-		if err := m.VaultRecordTUI.Load(&selectedVault); err != nil {
+		if err := m.VaultRecordTUI.Load(&selectedVaultAccess); err != nil {
 			panic(err)
 		}
 		m.VaultRecordTUI.Active = true
@@ -80,12 +80,12 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		vaultData, err := m.VaultService.Create(m.context.AuthUser, m.VaultName, &m.context.SelectedSoT.KeyPair)
+		vaultAccessData, err := m.VaultServiceTUI.CreateVault(m.VaultName)
 		if err != nil {
 			return m, nil
 		}
 
-		m.VaultList = append(m.VaultList, *vaultData)
+		m.VaultAccessList = append(m.VaultAccessList, *vaultAccessData)
 
 		m.VaultName = ""
 		m.Focus = FocusContent

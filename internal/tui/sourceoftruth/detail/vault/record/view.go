@@ -183,13 +183,13 @@ func (m Model) viewEditField(
 }
 
 func (m Model) Breadcrumb() []string {
-	if m.SelectedVault == nil {
+	if m.SelectedVaultAccess == nil {
 		return []string{"Vault"}
 	}
 
 	return []string{
 		"Vault",
-		m.SelectedVault.Name,
+		m.SelectedVaultAccess.Vault.Name,
 	}
 }
 

@@ -2,9 +2,8 @@ package vault
 
 import (
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-core/vaultaccess"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/app/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 )
 
@@ -27,42 +26,34 @@ type Model struct {
 
 	VaultName string
 
-	VaultList    []entity.Vault
-	VaultService *vault.Service
+	VaultAccessList []entity.VaultAccess
+	VaultServiceTUI *vault.Service
 
 	context        *app.Context
 	VaultRecordTUI vaultrecord.Model
 }
 
-func New(dbDeps *app.Deps, context *app.Context) Model {
-	vaultRepository := vault.NewRepository(dbDeps.SqliteDB)
-	vaultaccessRepository := vaultaccess.NewRepository(dbDeps.SqliteDB)
-	vaultaccessService := vaultaccess.NewService(vaultaccessRepository)
-	vaultService := vault.NewService(
-		vaultRepository,
-		context.NodeDB,
-		vaultaccessService,
-	)
-
+func New(appDeps *app.Deps, context *app.Context, masterKey string) Model {
+	vaultServiceTUI := vault.NewService(appDeps, context, masterKey)
 	return Model{
 		Active: true,
 		Cursor: 0,
 
 		context: context,
 
-		VaultList:    []entity.Vault{},
-		VaultService: vaultService,
+		VaultAccessList: []entity.VaultAccess{},
+		VaultServiceTUI: vaultServiceTUI,
 
-		VaultRecordTUI: vaultrecord.New(context, vaultService),
+		VaultRecordTUI: vaultrecord.New(context, vaultServiceTUI),
 	}
 }
 
 func (m *Model) Load() error {
-	vaultList, err := m.VaultService.VaultList(m.context.AuthUser)
+	vaultAccessList, err := m.VaultServiceTUI.List()
 	if err != nil {
 		return err
 	}
 
-	m.VaultList = vaultList
+	m.VaultAccessList = vaultAccessList
 	return nil
 }

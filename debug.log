@@ -1,0 +1,145 @@
+=== List ===
+SoT ID: 01M1Y8M3BBQM23A5HJBJPDSTZC
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y8M3BBQM23A5HJBJPDSTZC/vault
+Count: 0
+null
+============
+=== List ===
+SoT ID: 01M1Y8M3BBQM23A5HJBJPDSTZC
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y8M3BBQM23A5HJBJPDSTZC/vault
+Count: 1
+[
+  {
+    "id": "01M1Y8M7AMATK1HJSHXQ5QH3Z9",
+    "vault_id": "01M1Y8M6ZEWZ283FGJH8S9D1KT",
+    "vault_key": "iMHRYBrxLgGUhQ7bui9osnbZ_1lNuPNJnfJbLYA7w2DpjzCwnKEiEbC3-VFljx0zU1VVlADM0djaW2zeUODBRisMUds_YRTS8oRgCWzWzm4H1evjqBsuhn7ZwQ"
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9ARK46519B92S9PW0M23H
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ARK46519B92S9PW0M23H/vault
+Count: 0
+null
+============
+=== List ===
+SoT ID: 01M1Y9ARK46519B92S9PW0M23H
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ARK46519B92S9PW0M23H/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9AWKDHNZWCKBGQK5205B2",
+    "vault_id": "01M1Y9AVVHKS7WVVFQBNG8RMWS",
+    "vault_key": "pnLQflwNMS04i14y5XGZyGTjd2mF5v6XGFgnILLHzG_I9Bwnr2Ihy3shzUMv_hpJfeYG8yylHRoa08oeP87HbpUdW6VY767UkqS1LWN-p2pOnte5DPeabk9bVA"
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9ERR5TQQM101T80REK99J
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ERR5TQQM101T80REK99J/vault
+Count: 0
+null
+============
+=== List ===
+SoT ID: 01M1Y9ERR5TQQM101T80REK99J
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ERR5TQQM101T80REK99J/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9EW68MWQ9K187TXXTG4DR",
+    "vault_id": "01M1Y9EVMCECRNA17F8ASE2KDD",
+    "vault_key": "YneM_O5XLyG-fTXxyOuTUi-amFZIy-GeBh5UKL6G7QKCpybN4R3VRduXoyTwETd9h_emvEU8B7zSKwW5VdfeZRulSFLpnP1OzXOMEEI3OCMa9eEFy5RReopsQw",
+    "vault": {
+      "name": "test"
+    }
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9ERR5TQQM101T80REK99J
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ERR5TQQM101T80REK99J/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9EW68MWQ9K187TXXTG4DR",
+    "vault_id": "01M1Y9EVMCECRNA17F8ASE2KDD",
+    "vault_key": "YneM_O5XLyG-fTXxyOuTUi-amFZIy-GeBh5UKL6G7QKCpybN4R3VRduXoyTwETd9h_emvEU8B7zSKwW5VdfeZRulSFLpnP1OzXOMEEI3OCMa9eEFy5RReopsQw",
+    "vault": {
+      "name": "test"
+    }
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9ERR5TQQM101T80REK99J
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ERR5TQQM101T80REK99J/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9EW68MWQ9K187TXXTG4DR",
+    "vault_id": "01M1Y9EVMCECRNA17F8ASE2KDD",
+    "vault_key": "YneM_O5XLyG-fTXxyOuTUi-amFZIy-GeBh5UKL6G7QKCpybN4R3VRduXoyTwETd9h_emvEU8B7zSKwW5VdfeZRulSFLpnP1OzXOMEEI3OCMa9eEFy5RReopsQw",
+    "vault": {
+      "name": "test"
+    }
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9ERR5TQQM101T80REK99J
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9ERR5TQQM101T80REK99J/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9EW68MWQ9K187TXXTG4DR",
+    "vault_id": "01M1Y9EVMCECRNA17F8ASE2KDD",
+    "vault_key": "YneM_O5XLyG-fTXxyOuTUi-amFZIy-GeBh5UKL6G7QKCpybN4R3VRduXoyTwETd9h_emvEU8B7zSKwW5VdfeZRulSFLpnP1OzXOMEEI3OCMa9eEFy5RReopsQw",
+    "vault": {
+      "name": "test"
+    }
+  }
+]
+============
+=== List ===
+SoT ID: 01M1Y9RH8FKN4T29H739TNT0CX
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9RH8FKN4T29H739TNT0CX/vault
+Count: 0
+null
+============
+=== List ===
+SoT ID: 01M1Y9RH8FKN4T29H739TNT0CX
+SoT Address: localhost
+MasterKey exists: true
+Vault path: /home/franklin/.tacenva/node/01M1Y9RH8FKN4T29H739TNT0CX/vault
+Count: 1
+[
+  {
+    "id": "01M1Y9RM72X6DET0G4MZZZRR3N",
+    "vault_id": "01M1Y9RKVK2TX5PHS6V6NCVPCM",
+    "vault_key": "Pa9dTy5671a9pdZsDYwBiAxtHdAnCl5rEdqE77ErHFj73YPzwGmDZ0e0vdA7QOOllwlQaSjhrRkoOmBkyVLDLrrsnn1y1i68vtSIQAORTmStEmSZU12YyJ42Ug",
+    "vault": {
+      "name": "test"
+    }
+  }
+]
+============

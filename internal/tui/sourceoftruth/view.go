@@ -2,6 +2,7 @@ package sourceoftruth
 
 import (
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/tacenva/tacpass-tui/internal/styles"
 )
 
@@ -49,13 +50,32 @@ func (m Model) viewBreadcrumb() string {
 	items := []string{
 		"Source of Truth",
 	}
-	if m.Detail.Active {
-		items = append(items, m.Detail.Breadcrumb()...)
+
+	if m.Form.Active {
+		if m.Form.Editing {
+			items = append(items, "Edit")
+		} else {
+			items = append(items, "New")
+		}
+
+		return styles.BreadcrumbItems(items...)
 	}
+
+	if m.Detail.Active {
+		items = append(
+			items,
+			m.Detail.Breadcrumb()...,
+		)
+	}
+
 	return styles.BreadcrumbItems(items...)
 }
 
 func (m Model) viewContent() string {
+	if m.Form.Active {
+		return m.Form.View()
+	}
+
 	if m.Detail.Active {
 		return m.Detail.View()
 	}
@@ -65,23 +85,36 @@ func (m Model) viewContent() string {
 		lipgloss.NewStyle().
 			Width(30).
 			Render(styles.Muted.Render("Hostname")),
+
 		lipgloss.NewStyle().
 			Width(50).
 			Render(styles.Muted.Render("Address")),
 	)
 
-	items := []string{header}
+	items := []string{
+		header,
+	}
 
 	for i, sot := range m.SoTList {
 		hostname := sot.Hostname
 		address := sot.Address
 
 		if i == m.Cursor {
-			hostname = styles.Selected.Render("> " + hostname)
-			address = styles.Selected.Render(address)
+			hostname = styles.Selected.Render(
+				"> " + hostname,
+			)
+
+			address = styles.Selected.Render(
+				address,
+			)
 		} else {
-			hostname = styles.Normal.Render("  " + hostname)
-			address = styles.Normal.Render(address)
+			hostname = styles.Normal.Render(
+				"  " + hostname,
+			)
+
+			address = styles.Normal.Render(
+				address,
+			)
 		}
 
 		item := lipgloss.JoinHorizontal(
@@ -89,6 +122,7 @@ func (m Model) viewContent() string {
 			lipgloss.NewStyle().
 				Width(30).
 				Render(hostname),
+
 			lipgloss.NewStyle().
 				Width(50).
 				Render(address),
@@ -100,7 +134,9 @@ func (m Model) viewContent() string {
 	if len(m.SoTList) == 0 {
 		items = append(
 			items,
-			styles.Muted.Render("  No Source of Truth found."),
+			styles.Muted.Render(
+				"  No Source of Truth found.",
+			),
 		)
 	}
 
@@ -111,6 +147,10 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) viewNavigation() string {
+	if m.Form.Active {
+		return m.Form.Navigation(m.Width)
+	}
+
 	if m.Detail.Active {
 		return m.Detail.Navigation()
 	}
@@ -119,6 +159,8 @@ func (m Model) viewNavigation() string {
 		m.Width,
 		styles.Key("↑↓", "Navigate"),
 		styles.Key("↵", "Select"),
+		styles.Key("n", "New"),
+		styles.Key("e", "Edit"),
 		styles.Key("Esc", "Back"),
 		styles.Key("q", "Quit"),
 	)

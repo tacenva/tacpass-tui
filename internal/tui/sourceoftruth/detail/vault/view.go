@@ -24,7 +24,7 @@ func (m Model) View() string {
 
 	var rows []string
 
-	for i, vault := range m.VaultList {
+	for i, vaultaccess := range m.VaultAccessList {
 		selected := i == m.Cursor && m.Focus == FocusContent
 
 		prefix := ""
@@ -36,7 +36,7 @@ func (m Model) View() string {
 			prefix = "> "
 		}
 
-		row := prefix + vault.Name
+		row := prefix + vaultaccess.Vault.Name
 
 		if selected {
 			row = styles.Selected.Render(row)
@@ -56,7 +56,7 @@ func (m Model) View() string {
 
 	addVault := "+ New Vault"
 
-	if m.Cursor == len(m.VaultList) && m.Focus == FocusContent {
+	if m.Cursor == len(m.VaultAccessList) && m.Focus == FocusContent {
 		addVault = styles.Selected.Render("> Add Vault")
 	} else {
 		addVault = styles.Muted.Render(addVault)

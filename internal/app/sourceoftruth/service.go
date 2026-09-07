@@ -7,6 +7,7 @@ import (
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/util/keyring"
+	"github.com/tacenva/tacpass-tui/internal/api"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 )
@@ -63,15 +64,40 @@ func (s *Service) Access(masterPassword string) error {
 	return nil
 }
 
-func (s *Service) Create(hostname string, address string, keypair keyring.KeyPair) (string, error) {
+func (s *Service) Create(address string, keypair keyring.KeyPair) (string, error) {
 	if s.sotFile == nil {
 		return "", ErrForbidden
 	}
-	return s.sotFile.Insert(entity.SourceOfTruth{
-		Hostname: hostname,
-		Address:  address,
-		KeyPair:  keypair,
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	response, err := s.appDeps.Client.Enroll(
+		address,
+		api.EnrollRequest{
+			Hostname:  hostname,
+			PublicKey: keypair.PublicKey,
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return s.sotFile.Insert(&entity.SourceOfTruth{
+		Hostname:  hostname,
+		Address:   address,
+		AuthToken: response.AuthToken,
+		KeyPair:   keypair,
 	})
+}
+
+func (s *Service) Update(updatedSoT *entity.SourceOfTruth) error {
+	if s.sotFile == nil {
+		return ErrForbidden
+	}
+	return s.sotFile.Update(updatedSoT)
 }
 
 func (s *Service) Get(id string) (*entity.SourceOfTruth, error) {
