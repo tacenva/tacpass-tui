@@ -136,6 +136,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				"vault",
 			)
 
+			m.appDeps.Client.SetToken(selectedSoT.AuthToken)
+
 			m.Detail = detail.New(
 				m.appDeps,
 				&app.Context{

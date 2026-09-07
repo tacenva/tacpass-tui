@@ -23,6 +23,13 @@ func (m Model) View() string {
 	}
 
 	var rows []string
+	if m.ErrorMessage != "" {
+		rows = append(
+			rows,
+			styles.Error.Render(m.ErrorMessage),
+			"",
+		)
+	}
 
 	for i, vaultaccess := range m.VaultAccessList {
 		selected := i == m.Cursor && m.Focus == FocusContent

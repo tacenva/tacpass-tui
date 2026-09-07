@@ -52,7 +52,8 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		selectedVaultAccess := m.VaultAccessList[m.Cursor]
 
 		if err := m.VaultRecordTUI.Load(&selectedVaultAccess); err != nil {
-			panic(err)
+			m.ErrorMessage = err.Error()
+			return m, nil
 		}
 		m.VaultRecordTUI.Active = true
 
@@ -82,6 +83,7 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 		vaultAccessData, err := m.VaultServiceTUI.CreateVault(m.VaultName)
 		if err != nil {
+			m.ErrorMessage = err.Error()
 			return m, nil
 		}
 

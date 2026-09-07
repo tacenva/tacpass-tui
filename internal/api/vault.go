@@ -1,11 +1,31 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"strings"
+)
 
 func (c *Client) ListVaults(
 	address string,
 	result any,
 ) error {
+	debugFile, err := os.OpenFile(
+		"debug.log",
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0644,
+	)
+	if err == nil {
+		defer debugFile.Close()
+
+		fmt.Fprintf(
+			debugFile,
+			"ListVaults: GET %s/vault\nToken: %s\n",
+			strings.TrimRight(address, "/"),
+			c.Token,
+		)
+	}
+
 	return c.Get(
 		address,
 		"/vault",

@@ -31,6 +31,8 @@ type Model struct {
 
 	context        *app.Context
 	VaultRecordTUI vaultrecord.Model
+
+	ErrorMessage string
 }
 
 func New(appDeps *app.Deps, context *app.Context, masterKey string) Model {
@@ -51,9 +53,12 @@ func New(appDeps *app.Deps, context *app.Context, masterKey string) Model {
 func (m *Model) Load() error {
 	vaultAccessList, err := m.VaultServiceTUI.List()
 	if err != nil {
+		m.ErrorMessage = err.Error()
 		return err
 	}
 
+	m.ErrorMessage = ""
 	m.VaultAccessList = vaultAccessList
+
 	return nil
 }

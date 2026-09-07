@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -233,31 +234,21 @@ func (c *Client) do(
 }
 
 func parseHTTPError(resp *http.Response) error {
-	var body struct {
-		Error   string `json:"error"`
-		Message string `json:"message"`
-	}
+	body, err := io.ReadAll(resp.Body)
+	if err == nil {
+		message := strings.TrimSpace(string(body))
 
-	if err := json.NewDecoder(resp.Body).Decode(&body); err == nil {
-		if body.Error != "" {
+		if message != "" {
 			return fmt.Errorf(
-				"daemon returned %d: %s",
+				"error %d: %s",
 				resp.StatusCode,
-				body.Error,
-			)
-		}
-
-		if body.Message != "" {
-			return fmt.Errorf(
-				"daemon returned %d: %s",
-				resp.StatusCode,
-				body.Message,
+				message,
 			)
 		}
 	}
 
 	return fmt.Errorf(
-		"daemon returned status %d",
+		"error %d",
 		resp.StatusCode,
 	)
 }

@@ -93,6 +93,10 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 		return nil, err
 	}
 
+	if len(vaultAccessList) == 0 && s.context.SelectedSoT.Address != "localhost" {
+		return s.Sync()
+	}
+
 	fmt.Fprintf(debugFile, "Count: %d\n", len(vaultAccessList))
 
 	jsonData, err := json.MarshalIndent(vaultAccessList, "", "  ")
@@ -129,7 +133,16 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 		return nil, err
 	}
 
-	err = vaultFile.UpdateOrCreateBulk(vaultAccessList)
+	vaultAccessPointers := make([]*entity.VaultAccess, 0, len(vaultAccessList))
+
+	for i := range vaultAccessList {
+		vaultAccessPointers = append(
+			vaultAccessPointers,
+			&vaultAccessList[i],
+		)
+	}
+
+	err = vaultFile.UpdateOrCreateBulk(vaultAccessPointers)
 	if err != nil {
 		return nil, err
 	}
@@ -137,25 +150,53 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 	return vaultAccessList, nil
 }
 
+func (s *Service) createVaultRemotely(vaultName string) (*entity.VaultAccess, error) {
+	var vaultAccess entity.VaultAccess
+
+	body := struct {
+		Name string `json:"name"`
+	}{
+		Name: vaultName,
+	}
+
+	err := s.appDeps.Client.CreateVault(
+		s.context.SelectedSoT.Address,
+		body,
+		&vaultAccess,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vaultAccess, nil
+}
+
 func (s *Service) CreateVault(vaultName string) (*entity.VaultAccess, error) {
+	var (
+		vaultAccess *entity.VaultAccess
+		err         error
+	)
+
 	if s.context.SelectedSoT.Address != "localhost" {
-		return nil, nil
-	}
+		vaultAccess, err = s.createVaultRemotely(vaultName)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		authUser, err := s.authService.GetUserData(
+			s.context.SelectedSoT.AuthToken,
+		)
+		if err != nil {
+			return nil, err
+		}
 
-	authUser, err := s.authService.GetUserData(
-		s.context.SelectedSoT.AuthToken,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	vaultAccess, err := s.vaultService.Create(
-		authUser,
-		vaultName,
-		&s.context.SelectedSoT.KeyPair,
-	)
-	if err != nil {
-		return nil, err
+		vaultAccess, err = s.vaultService.Create(
+			authUser,
+			vaultName,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	db := database.New(s.appDeps.Config.Path(
@@ -173,7 +214,6 @@ func (s *Service) CreateVault(vaultName string) (*entity.VaultAccess, error) {
 	if err != nil {
 		return nil, err
 	}
-	// vaultAccess.ID
 
 	return vaultAccess, nil
 }
