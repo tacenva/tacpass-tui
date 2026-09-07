@@ -2,29 +2,33 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/tui"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func main() {
-	devDir := "dev/"
-
-	if err := os.MkdirAll(devDir, 0700); err != nil {
-		fmt.Println("failed to create dev directory:", err)
-		os.Exit(1)
+	cfg, err := config.LoadOrCreate()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	tacenvaDB := database.New(devDir)
+	tacenvaDB := database.New(cfg.BaseDir)
 
+	appDBFilename := cfg.Path(config.AppDBFileName)
+	if err != nil {
+		return
+	}
 	sqliteDB, err := gorm.Open(
-		sqlite.Open(devDir+"tacenva.db"),
+		sqlite.Open(appDBFilename),
 		&gorm.Config{},
 	)
 	if err != nil {
@@ -42,9 +46,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	appDeps := app.DatabaseDeps{
-		TacenvaDB: tacenvaDB,
-		SqliteDB:  sqliteDB,
+	appDeps := app.Deps{
+		Config:   cfg,
+		AppDB:    tacenvaDB,
+		SqliteDB: sqliteDB,
 	}
 
 	p := tea.NewProgram(

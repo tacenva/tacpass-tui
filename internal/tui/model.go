@@ -30,14 +30,14 @@ type Model struct {
 	SourceOfTruth sourceoftruth.Model
 }
 
-func New(deps *app.DatabaseDeps) Model {
+func New(deps *app.Deps) Model {
 	permissionRepository := permission.NewRepository(deps.SqliteDB)
 	permissionService := permission.NewService(permissionRepository)
 	userRepository := user.NewRepository(deps.SqliteDB)
 	userService := user.NewService(userRepository)
 
 	authService := auth.NewService(userService, permissionService)
-	soTService := SoTService.NewService(deps.TacenvaDB, authService)
+	soTService := SoTService.NewService(deps, authService)
 
 	return Model{
 		Screen:        ScreenLogin,

@@ -2,7 +2,9 @@ package sourceoftruth
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 )
 
@@ -46,11 +48,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				return m, nil
 			}
 
+			nodeDBDir := m.appDeps.Config.Path(
+				config.NodeDirName,
+				selectedSoT.ID,
+			)
+
 			m.Detail = detail.New(m.appDeps, &app.Context{
 				SelectedSoT: &selectedSoT,
 				AuthUser:    authUser,
-				// AuthService:       m.authService,
-				// PermissionService: m.permissionService,
+				NodeDB:      database.New(nodeDBDir),
 			})
 		}
 	}

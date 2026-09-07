@@ -34,13 +34,13 @@ type Model struct {
 	VaultRecordTUI vaultrecord.Model
 }
 
-func New(dbDeps *app.DatabaseDeps, context *app.Context) Model {
+func New(dbDeps *app.Deps, context *app.Context) Model {
 	vaultRepository := vault.NewRepository(dbDeps.SqliteDB)
 	vaultaccessRepository := vaultaccess.NewRepository(dbDeps.SqliteDB)
 	vaultaccessService := vaultaccess.NewService(vaultaccessRepository)
 	vaultService := vault.NewService(
 		vaultRepository,
-		dbDeps.TacenvaDB,
+		context.NodeDB,
 		vaultaccessService,
 	)
 

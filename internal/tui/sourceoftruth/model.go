@@ -19,12 +19,12 @@ type Model struct {
 
 	Cursor int
 
-	appDeps           *app.DatabaseDeps
+	appDeps           *app.Deps
 	authService       *auth.Service
 	permissionService *permission.Service
 }
 
-func New(appDeps *app.DatabaseDeps, SoTService *sourceoftruth.Service, authService *auth.Service, permissionService *permission.Service) Model {
+func New(appDeps *app.Deps, SoTService *sourceoftruth.Service, authService *auth.Service, permissionService *permission.Service) Model {
 	return Model{
 		appDeps:           appDeps,
 		authService:       authService,

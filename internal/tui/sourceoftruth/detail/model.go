@@ -28,7 +28,7 @@ type Model struct {
 	vaultTUI vaultTUI.Model
 }
 
-func New(dbDeps *app.DatabaseDeps, context *app.Context) Model {
+func New(dbDeps *app.Deps, context *app.Context) Model {
 	v := vaultTUI.New(dbDeps, context)
 	v.Load()
 

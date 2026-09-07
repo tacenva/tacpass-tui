@@ -10,20 +10,9 @@ type SourceOfTruth struct {
 	KeyPair   keyring.KeyPair `json:"key_pair"`
 }
 
-// tacenva/
-// ├── local/
-// │   ├── config.toml
-// │   └── keypair.tacenva
-// │
-// ├── source-of-truth/
-// │   ├── tacenva.db
-// │   └── vault/
-// │       ├── {vault_id}.tacenva
-// │       └── ...
-// │
-// └── replicas/
-//     └── {node_ulid}/
-//         ├── tacenva.db
-//         └── vault/
-//             ├── {vault_id}.tacenva
-//             └── ...
+// .tacenva/
+// .tacenva/config.toml
+// .tacenva/tacenva.db
+// .tacenva/keypair.tacenva
+// .tacenva/node/{node_ulid}/vault/{vault_ulid}.tacenva
+// .tacenva/node/{node_ulid}/vault-{node_ulid}.tacenva

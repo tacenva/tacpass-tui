@@ -7,6 +7,7 @@ import (
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/util/keyring"
+	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 )
 
@@ -15,20 +16,20 @@ var (
 )
 
 type Service struct {
-	db          *database.DB
+	appDeps     *app.Deps
 	sotFile     *database.DatabaseFile
 	authService *auth.Service
 }
 
-func NewService(db *database.DB, authService *auth.Service) *Service {
+func NewService(appDeps *app.Deps, authService *auth.Service) *Service {
 	return &Service{
-		db:          db,
+		appDeps:     appDeps,
 		authService: authService,
 	}
 }
 
 func (s *Service) Access(masterPassword string) error {
-	sotFile, err := s.db.File("source-of-truth", masterPassword)
+	sotFile, err := s.appDeps.AppDB.File("source-of-truth", masterPassword)
 	if err != nil {
 		return err
 	}
@@ -46,22 +47,25 @@ func (s *Service) Access(masterPassword string) error {
 			return err
 		}
 
-		if err := s.sotFile.Insert(&entity.SourceOfTruth{
+		SoTULID, err := s.sotFile.Insert(&entity.SourceOfTruth{
 			Hostname:  hostname,
 			Address:   "localhost",
 			AuthToken: token,
 			KeyPair:   *keypair,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
+
+		s.appDeps.Config.SetSoTULID(SoTULID)
 	}
 
 	return nil
 }
 
-func (s *Service) Create(hostname string, address string, keypair keyring.KeyPair) error {
+func (s *Service) Create(hostname string, address string, keypair keyring.KeyPair) (string, error) {
 	if s.sotFile == nil {
-		return ErrForbidden
+		return "", ErrForbidden
 	}
 	return s.sotFile.Insert(entity.SourceOfTruth{
 		Hostname: hostname,
