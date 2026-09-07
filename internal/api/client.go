@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -99,6 +100,22 @@ func (c *Client) PostPublic(
 	)
 }
 
+func (c *Client) Put(
+	address string,
+	path string,
+	body any,
+	result any,
+) error {
+	return c.do(
+		http.MethodPut,
+		address,
+		path,
+		body,
+		result,
+		true,
+	)
+}
+
 func (c *Client) Patch(
 	address string,
 	path string,
@@ -174,7 +191,10 @@ func (c *Client) do(
 	if body != nil {
 		data, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("encode request: %w", err)
+			return fmt.Errorf(
+				"encode request: %w",
+				err,
+			)
 		}
 
 		requestBody = bytes.NewReader(data)
@@ -192,18 +212,29 @@ func (c *Client) do(
 		requestBody,
 	)
 	if err != nil {
-		return fmt.Errorf("create request: %w", err)
+		return fmt.Errorf(
+			"create request: %w",
+			err,
+		)
 	}
 
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set(
+		"Accept",
+		"application/json",
+	)
 
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(
+			"Content-Type",
+			"application/json",
+		)
 	}
 
 	if authenticated {
 		if c.Token == "" {
-			return fmt.Errorf("authentication token is required")
+			return errors.New(
+				"authentication token is required",
+			)
 		}
 
 		req.Header.Set(
@@ -214,11 +245,16 @@ func (c *Client) do(
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return fmt.Errorf(
+			"request failed: %w",
+			err,
+		)
 	}
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 ||
+		resp.StatusCode >= 300 {
 		return parseHTTPError(resp)
 	}
 
@@ -226,29 +262,34 @@ func (c *Client) do(
 		return nil
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-		return fmt.Errorf("decode response: %w", err)
+	if err := json.NewDecoder(
+		resp.Body,
+	).Decode(result); err != nil {
+		return fmt.Errorf(
+			"decode response: %w",
+			err,
+		)
 	}
 
 	return nil
 }
 
-func parseHTTPError(resp *http.Response) error {
+func parseHTTPError(
+	resp *http.Response,
+) error {
 	body, err := io.ReadAll(resp.Body)
 	if err == nil {
-		message := strings.TrimSpace(string(body))
+		message := strings.TrimSpace(
+			string(body),
+		)
 
 		if message != "" {
-			return fmt.Errorf(
-				"error %d: %s",
-				resp.StatusCode,
-				message,
-			)
+			return errors.New(message)
 		}
 	}
 
 	return fmt.Errorf(
-		"error %d",
+		"daemon returned status %d",
 		resp.StatusCode,
 	)
 }

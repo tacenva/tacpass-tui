@@ -52,21 +52,30 @@ type Model struct {
 	context *app.Context
 }
 
-func New(context *app.Context, VaultServiceTUI *vault.Service) Model {
+func New(
+	context *app.Context,
+	vaultServiceTUI *vault.Service,
+) Model {
 	return Model{
 		Records: []entity.VaultRecord{},
 		Cursor:  0,
 		Focus:   FocusContent,
 		Active:  false,
 
-		VaultServiceTUI: VaultServiceTUI,
+		VaultServiceTUI: vaultServiceTUI,
 		context:         context,
 	}
 }
 
-func (m *Model) Load(selectedVaultAccess *entity.VaultAccess) error {
-	vaultRecords, err := m.VaultServiceTUI.DecryptedRecordList(
-		selectedVaultAccess.VaultID,
+func (m *Model) Load(
+	selectedVaultAccess *entity.VaultAccess,
+) error {
+	if selectedVaultAccess == nil {
+		return nil
+	}
+
+	vaultRecords, err := m.VaultServiceTUI.ListRecords(
+		selectedVaultAccess,
 	)
 	if err != nil {
 		return err
@@ -74,6 +83,7 @@ func (m *Model) Load(selectedVaultAccess *entity.VaultAccess) error {
 
 	m.SelectedVaultAccess = selectedVaultAccess
 	m.Records = vaultRecords
+	m.Cursor = 0
 
 	return nil
 }
@@ -101,7 +111,11 @@ func (m *Model) startEdit() {
 	m.EditName = record.Name
 	m.EditEndpoint = record.Endpoint
 	m.EditPassword = record.Password
-	// m.EditExpiredAt = record.ExpiredAt.Format("2006-01-02 15:04")
+	m.EditExpiredAt = ""
+
+	// if !record.ExpiredAt.IsZero() {
+	// 	m.EditExpiredAt = record.ExpiredAt.Format("2006-01-02 15:04")
+	// }
 
 	m.ShowPassword = false
 	m.Focus = FocusEdit
@@ -143,7 +157,10 @@ func (m *Model) saveEdit() {
 	// 	record.ExpiredAt = expiredAt
 	// }
 
-	_, err := m.VaultServiceTUI.UpdateRecord(m.SelectedVaultAccess.VaultID, record)
+	_, err := m.VaultServiceTUI.UpdateRecord(
+		m.SelectedVaultAccess,
+		record,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -170,14 +187,18 @@ func (m *Model) saveNew() {
 	}
 
 	newRecord, err := m.VaultServiceTUI.AppendRecord(
-		m.SelectedVaultAccess.VaultID,
+		m.SelectedVaultAccess,
 		&record,
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	m.Records = append(m.Records, *newRecord)
+	m.Records = append(
+		m.Records,
+		*newRecord,
+	)
+
 	m.Cursor = len(m.Records) - 1
 
 	m.clearForm()
@@ -197,5 +218,8 @@ func parseExpiredAt(value string) (time.Time, error) {
 		return time.Time{}, nil
 	}
 
-	return time.Parse("2006-01-02 15:04", value)
+	return time.Parse(
+		"2006-01-02 15:04",
+		value,
+	)
 }
