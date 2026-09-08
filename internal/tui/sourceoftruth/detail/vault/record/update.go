@@ -6,12 +6,15 @@ import (
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
 
 	case tea.KeyMsg:
+		if m.ScreenState.Loading {
+			return m, nil
+		}
+
 		switch m.Focus {
 		case FocusContent:
 			return m.updateContent(msg)
@@ -67,8 +70,11 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 }
 
 func (m Model) updateEdit(msg tea.KeyMsg) (Model, tea.Cmd) {
-	switch msg.String() {
+	if m.ActionState.Loading {
+		return m, nil
+	}
 
+	switch msg.String() {
 	case "tab", "down":
 		m.nextField()
 
@@ -99,8 +105,11 @@ func (m Model) updateEdit(msg tea.KeyMsg) (Model, tea.Cmd) {
 }
 
 func (m Model) updateNew(msg tea.KeyMsg) (Model, tea.Cmd) {
-	switch msg.String() {
+	if m.ActionState.Loading {
+		return m, nil
+	}
 
+	switch msg.String() {
 	case "tab", "down":
 		m.nextField()
 

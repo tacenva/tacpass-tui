@@ -42,6 +42,7 @@ var (
 		Faint(true)
 
 	Error = lipgloss.NewStyle().
+		PaddingLeft(paddingLeft).
 		Bold(true)
 
 	KeyStyle = lipgloss.NewStyle().

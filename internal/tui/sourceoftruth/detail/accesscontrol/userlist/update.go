@@ -8,34 +8,47 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.Width = msg.Width
 		m.Height = msg.Height
 
-		return m, nil
-
 	case UsersLoadedMsg:
-		if msg.Err != nil {
+		if m.ScreenState.Loading {
+			if msg.Err != nil {
+				m.ScreenState.Fail(msg.Err)
+				return m, nil
+			}
+
+			m.Users = msg.Users
+			m.normalizeCursor()
+			m.ScreenState.Success()
+
 			return m, nil
 		}
 
-		m.Users = msg.Users
+		if m.ActionState.Loading {
+			if msg.Err != nil {
+				m.ActionState.Fail(msg.Err)
+				return m, nil
+			}
 
-		if len(m.Users) == 0 {
-			m.Cursor = 0
+			m.Users = msg.Users
+			m.normalizeCursor()
+			m.ActionState.Success()
+
 			return m, nil
 		}
-
-		if m.Cursor >= len(m.Users) {
-			m.Cursor = len(m.Users) - 1
-		}
-
-		return m, nil
 
 	case UserUpdatedMsg:
 		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
 			return m, nil
 		}
 
-		return m, m.Load()
+		return m, m.load()
 
 	case tea.KeyMsg:
+		if m.ScreenState.Loading ||
+			m.ActionState.Loading {
+			return m, nil
+		}
+
 		switch msg.String() {
 		case "up", "k":
 			if m.Cursor > 0 {
@@ -48,13 +61,22 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 
 		case "a":
+			if len(m.Users) == 0 {
+				return m, nil
+			}
+
+			m.ActionState.Start()
+
 			return m, m.approveUser()
 
 		case "r":
-			return m, m.revokeUser()
+			if len(m.Users) == 0 {
+				return m, nil
+			}
 
-		case "enter":
-			// User detail nanti.
+			m.ActionState.Start()
+
+			return m, m.revokeUser()
 
 		case "esc":
 			m.Focus = FocusNone
@@ -63,6 +85,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m *Model) normalizeCursor() {
+	if len(m.Users) == 0 {
+		m.Cursor = 0
+		return
+	}
+
+	if m.Cursor >= len(m.Users) {
+		m.Cursor = len(m.Users) - 1
+	}
 }
 
 func (m Model) approveUser() tea.Cmd {

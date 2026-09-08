@@ -39,16 +39,31 @@ func (m Model) viewContent() string {
 		)
 	}
 
+	rows := []string{
+		styles.Normal.Render("Users"),
+		"",
+		table.View(),
+	}
+
+	if actionState := m.viewActionState(); actionState != "" {
+		rows = append(rows, "", actionState)
+	}
+
 	return lipgloss.NewStyle().
 		PaddingLeft(4).
 		Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
-				styles.Normal.Render("Users"),
-				"",
-				table.View(),
+				rows...,
 			),
 		)
+}
+
+func (m Model) viewActionState() string {
+	return components.AsyncStateView(
+		m.ActionState,
+		"Updating...",
+	)
 }
 
 func (m Model) BreadcrumbItems() []string {

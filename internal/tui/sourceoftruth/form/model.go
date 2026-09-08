@@ -1,5 +1,7 @@
 package form
 
+import "github.com/tacenva/tacpass-tui/internal/tui/state"
+
 type Field int
 
 const (
@@ -22,12 +24,15 @@ type Model struct {
 
 	EditField Field
 	Editing   bool
+
+	ActionState *state.Async
 }
 
-func New() Model {
+func New(actionState *state.Async) Model {
 	return Model{
-		Active:    true,
-		EditField: FieldHostname,
+		Active:      true,
+		EditField:   FieldHostname,
+		ActionState: actionState,
 	}
 }
 
@@ -36,15 +41,17 @@ func NewEdit(
 	address string,
 	publicKey string,
 	privateKey string,
+	actionState *state.Async,
 ) Model {
 	return Model{
-		Active:     true,
-		Hostname:   hostname,
-		Address:    address,
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		EditField:  FieldHostname,
-		Editing:    true,
+		Active:      true,
+		Hostname:    hostname,
+		Address:     address,
+		PublicKey:   publicKey,
+		PrivateKey:  privateKey,
+		EditField:   FieldHostname,
+		Editing:     true,
+		ActionState: actionState,
 	}
 }
 

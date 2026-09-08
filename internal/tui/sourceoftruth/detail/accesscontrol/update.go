@@ -10,11 +10,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
-
 		return m, nil
 
 	case PermissionsLoadedMsg:
+		if !m.ScreenState.Loading {
+			return m, nil
+		}
+
 		if msg.Err != nil {
+			m.ScreenState.Fail(msg.Err)
 			return m, nil
 		}
 
@@ -24,13 +28,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.Cursor = len(m.Permissions)
 		}
 
+		m.ScreenState.Success()
+
 		return m, nil
 
 	case PermissionSavedMsg:
 		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
 			return m, nil
 		}
 
+		m.ActionState.Success()
 		m.closeForm()
 
 		return m, m.Load()
@@ -42,6 +50,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, cmd
 
 	case tea.KeyMsg:
+		if m.ScreenState.Loading {
+			return m, nil
+		}
+
 		switch m.Focus {
 		case FocusContent:
 			return m.updateContent(msg)
@@ -170,9 +182,11 @@ func (m Model) updateForm(msg tea.KeyMsg) (Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) saveForm() tea.Cmd {
+func (m *Model) saveForm() tea.Cmd {
 	name := m.formName()
 	privilege := m.FormPrivilege
+
+	m.ActionState.Start()
 
 	switch m.FormMode {
 	case FormNew:

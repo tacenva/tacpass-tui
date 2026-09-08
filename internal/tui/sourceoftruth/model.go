@@ -7,6 +7,7 @@ import (
 	"github.com/tacenva/tacpass-tui/internal/entity"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/form"
+	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 
 type Model struct {
@@ -25,6 +26,9 @@ type Model struct {
 	masterKey string
 
 	coreServices *coreApp.Services
+
+	ScreenState *state.Async
+	ActionState *state.Async
 }
 
 func New(
@@ -32,12 +36,17 @@ func New(
 	SoTService *sourceoftruth.Service,
 	coreServices *coreApp.Services,
 ) Model {
+	ScreenState := &state.Async{}
+	ActionState := &state.Async{}
+
 	return Model{
 		appDeps:      appDeps,
 		SoTService:   SoTService,
 		coreServices: coreServices,
 		Cursor:       0,
 		Form:         form.Model{},
+		ScreenState:  ScreenState,
+		ActionState:  ActionState,
 	}
 }
 

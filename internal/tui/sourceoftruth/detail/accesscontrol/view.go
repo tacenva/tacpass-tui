@@ -1,8 +1,6 @@
 package accesscontrol
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/tacenva/tacpass-tui/internal/styles"
@@ -89,36 +87,45 @@ func (m Model) viewForm() string {
 
 	privilege := string(m.FormPrivilege)
 
-	form := lipgloss.JoinVertical(
-		lipgloss.Left,
-
+	rows := []string{
 		styles.Normal.Render(title),
-
 		"",
-
 		components.FormField(
 			"Name",
 			name,
 			m.FormCursor == 0,
 		),
-
 		"",
-
 		components.FormField(
 			"Privilege",
 			privilege,
 			m.FormCursor == 1,
 		),
-
 		"",
 		styles.Muted.Render(
-			fmt.Sprintf("Use ←→ to change privilege"),
+			"Use ←→ to change privilege",
 		),
+	}
+
+	if actionState := m.viewActionState(); actionState != "" {
+		rows = append(rows, "", actionState)
+	}
+
+	form := lipgloss.JoinVertical(
+		lipgloss.Left,
+		rows...,
 	)
 
 	return lipgloss.NewStyle().
 		PaddingLeft(4).
 		Render(form)
+}
+
+func (m Model) viewActionState() string {
+	return components.AsyncStateView(
+		m.ActionState,
+		"Saving...",
+	)
 }
 
 func (m Model) BreadcrumbItems() []string {

@@ -2,7 +2,13 @@ package vault
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/tacpass-core/entity"
 )
+
+type VaultCreatedMsg struct {
+	VaultAccess *entity.VaultAccess
+	Err         error
+}
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if m.VaultRecordTUI.Active {
@@ -11,16 +17,47 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		return m, cmd
 	}
-	switch msg := msg.(type) {
 
+	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
 
+	case VaultsLoadedMsg:
+		if msg.Err != nil {
+			m.ScreenState.Fail(msg.Err)
+			return m, nil
+		}
+
+		m.VaultAccessList = msg.VaultAccessList
+		m.normalizeCursor()
+		m.ScreenState.Success()
+
+	case VaultCreatedMsg:
+		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
+			return m, nil
+		}
+
+		m.VaultAccessList = append(
+			m.VaultAccessList,
+			*msg.VaultAccess,
+		)
+
+		m.VaultName = ""
+		m.Focus = FocusContent
+		m.ActionState.Success()
+
 	case tea.KeyMsg:
+		if m.ScreenState.Loading ||
+			m.ActionState.Loading {
+			return m, nil
+		}
+
 		switch m.Focus {
 		case FocusContent:
 			return m.updateContent(msg)
+
 		case FocusNewVault:
 			return m.updateNewVault(msg)
 		}
@@ -29,14 +66,25 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *Model) normalizeCursor() {
+	if len(m.VaultAccessList) == 0 {
+		m.Cursor = 0
+		return
+	}
+
+	if m.Cursor >= len(m.VaultAccessList) {
+		m.Cursor = len(m.VaultAccessList) - 1
+	}
+}
+
 func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "up":
+	case "up", "k":
 		if m.Cursor > 0 {
 			m.Cursor--
 		}
 
-	case "down":
+	case "down", "j":
 		if m.Cursor < len(m.VaultAccessList) {
 			m.Cursor++
 		}
@@ -51,13 +99,14 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 		selectedVaultAccess := m.VaultAccessList[m.Cursor]
 
-		if err := m.VaultRecordTUI.Load(&selectedVaultAccess); err != nil {
-			m.ErrorMessage = err.Error()
+		if err := m.VaultRecordTUI.Load(
+			&selectedVaultAccess,
+		); err != nil {
+			m.ScreenState.Fail(err)
 			return m, nil
 		}
-		m.VaultRecordTUI.Active = true
 
-		return m, nil
+		m.VaultRecordTUI.Active = true
 
 	case "esc":
 		m.Focus = FocusNone
@@ -71,7 +120,6 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-
 	case "esc", "ctrl+c":
 		m.Focus = FocusContent
 		m.VaultName = ""
@@ -81,16 +129,18 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		vaultAccessData, err := m.VaultServiceTUI.CreateVault(m.VaultName)
-		if err != nil {
-			m.ErrorMessage = err.Error()
-			return m, nil
+		m.ActionState.Start()
+
+		name := m.VaultName
+
+		return m, func() tea.Msg {
+			vaultAccessData, err := m.VaultServiceTUI.CreateVault(name)
+
+			return VaultCreatedMsg{
+				VaultAccess: vaultAccessData,
+				Err:         err,
+			}
 		}
-
-		m.VaultAccessList = append(m.VaultAccessList, *vaultAccessData)
-
-		m.VaultName = ""
-		m.Focus = FocusContent
 
 	case "backspace":
 		if len(m.VaultName) > 0 {

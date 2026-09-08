@@ -25,6 +25,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if m.Form.Active {
 		switch msg := msg.(type) {
 		case form.SubmitMsg:
+			m.ActionState.Start()
+
 			keypair := keyring.KeyPair{
 				PublicKey:  msg.PublicKey,
 				PrivateKey: msg.PrivateKey,
@@ -124,11 +126,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				selectedSoT.Address,
 				selectedSoT.KeyPair.PublicKey,
 				selectedSoT.KeyPair.PrivateKey,
+				m.ActionState,
 			)
 
 		case "enter":
 			if m.Cursor == len(m.SoTList) {
-				m.Form = form.New()
+				m.Form = form.New(m.ActionState)
 				return m, nil
 			}
 
@@ -177,7 +180,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.coreServices.Vault,
 				m.coreServices.Auth,
 				m.coreServices.AccessControl,
+				m.ScreenState,
+				m.ActionState,
 			)
+
+			return m, m.Detail.Init()
 		}
 	}
 

@@ -120,6 +120,10 @@ func (m Model) viewEdit(title string) string {
 		),
 	}
 
+	if content := m.viewActionState(); content != "" {
+		rows = append(rows, content)
+	}
+
 	return styles.MainContent.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -152,4 +156,11 @@ func (m Model) Navigation() string {
 	return styles.Navigation.
 		Width(m.Width).
 		Render(content)
+}
+
+func (m Model) viewActionState() string {
+	return components.AsyncStateView(
+		m.ActionState,
+		"Saving...",
+	)
 }

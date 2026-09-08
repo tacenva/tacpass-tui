@@ -9,7 +9,12 @@ import (
 
 func (m Model) View() string {
 	sidebar := m.viewSidebar()
-	content := m.viewContent()
+	var content string
+	if m.ScreenState.Loading {
+		content = m.viewLoading()
+	} else {
+		content = m.viewContent()
+	}
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
@@ -67,6 +72,14 @@ func (m Model) viewContent() string {
 	}
 
 	return ""
+}
+
+func (m Model) viewLoading() string {
+	return lipgloss.NewStyle().
+		PaddingLeft(4).
+		Render(
+			styles.Normal.Render("Loading..."),
+		)
 }
 
 func (m Model) Breadcrumb() []string {

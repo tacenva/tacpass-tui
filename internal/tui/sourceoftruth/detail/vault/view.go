@@ -12,25 +12,21 @@ func (m Model) View() string {
 	}
 
 	if m.Focus == FocusNewVault {
-		return styles.MainContent.Render(
-			lipgloss.JoinVertical(
-				lipgloss.Left,
-				styles.Title.Render("Add Vault"),
-				"",
-				styles.Normal.Render("Name"),
-				"> "+m.VaultName+"_",
-			),
-		)
+		return m.viewNewVault()
 	}
 
+	return m.viewContent()
+}
+
+func (m Model) viewContent() string {
 	var rows []components.TableRow
 
-	for _, vaultaccess := range m.VaultAccessList {
+	for _, vaultAccess := range m.VaultAccessList {
 		rows = append(
 			rows,
 			components.TableRow{
 				Values: []string{
-					vaultaccess.Vault.Name,
+					vaultAccess.Vault.Name,
 				},
 			},
 		)
@@ -52,6 +48,38 @@ func (m Model) View() string {
 	return styles.MainContent.Render(
 		table.View(),
 	)
+}
+
+func (m Model) viewNewVault() string {
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		styles.Title.Render("Add Vault"),
+		"",
+		styles.Normal.Render("Name"),
+		"> "+m.VaultName+"_",
+	)
+
+	if m.ActionState.Loading {
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			content,
+			"",
+			styles.Muted.Render("Creating..."),
+		)
+	}
+
+	if m.ActionState.Error != nil {
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			content,
+			"",
+			styles.Error.Render(
+				"[ERROR] "+m.ActionState.Error.Error(),
+			),
+		)
+	}
+
+	return styles.MainContent.Render(content)
 }
 
 func (m Model) BreadcrumbItems() []string {

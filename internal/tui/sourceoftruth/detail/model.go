@@ -8,6 +8,7 @@ import (
 
 	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
+	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 
 type Focus int
@@ -32,6 +33,9 @@ type Model struct {
 
 	vaultTUI         vaultTUI.Model
 	accessControlTUI accessControlTUI.Model
+
+	ScreenState *state.Async
+	ActionState *state.Async
 }
 
 func New(
@@ -41,6 +45,8 @@ func New(
 	coreVaultService *vault.Service,
 	authService *auth.Service,
 	coreACService *accesscontrol.Service,
+	screenState *state.Async,
+	actionState *state.Async,
 ) Model {
 	v := vaultTUI.New(
 		appDeps,
@@ -48,14 +54,16 @@ func New(
 		masterKey,
 		coreVaultService,
 		authService,
+		screenState,
+		actionState,
 	)
-
-	v.Load()
 
 	a := accessControlTUI.New(
 		appDeps,
 		ctx,
 		coreACService,
+		screenState,
+		actionState,
 	)
 
 	return Model{
@@ -67,5 +75,8 @@ func New(
 
 		vaultTUI:         v,
 		accessControlTUI: a,
+
+		ScreenState: screenState,
+		ActionState: screenState,
 	}
 }

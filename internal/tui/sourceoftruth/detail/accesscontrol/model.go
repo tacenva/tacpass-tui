@@ -10,6 +10,7 @@ import (
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
 	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
+	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 
 var errFormPermissionNil = errors.New("form permission is nil")
@@ -61,12 +62,17 @@ type Model struct {
 	FormPermission *entity.Permission
 
 	UserList userListTUI.Model
+
+	ScreenState *state.Async
+	ActionState *state.Async
 }
 
 func New(
 	appDeps *app.Deps,
 	context *app.Context,
 	coreACService *coreAC.Service,
+	ScreenState *state.Async,
+	ActionState *state.Async,
 ) Model {
 	service := accesscontrol.NewService(
 		appDeps,
@@ -89,14 +95,20 @@ func New(
 		FormCursor:    0,
 		FormPrivilege: entity.PrivilegeRead,
 
-		UserList: userListTUI.New(
-			service,
-			"",
-		),
+		// UserList: userListTUI.New(
+		// 	service,
+		// 	"",
+		// 	ScreenState,
+		// 	ActionState,
+		// ),
+		ScreenState: ScreenState,
+		ActionState: ActionState,
 	}
 }
 
-func (m Model) Load() tea.Cmd {
+func (m *Model) Load() tea.Cmd {
+	m.ScreenState.Start()
+
 	return func() tea.Msg {
 		permissions, err := m.service.List()
 
@@ -173,9 +185,12 @@ func (m *Model) openUsers(
 	m.UserList = userListTUI.New(
 		m.service,
 		permission.ID,
+		m.ScreenState,
+		m.ActionState,
 	)
 
 	m.UserList.Active = true
+	m.UserList.ScreenState.Start()
 	m.UserList.Focus = userListTUI.FocusContent
 
 	m.Focus = FocusUsers

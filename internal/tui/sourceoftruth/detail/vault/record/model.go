@@ -6,6 +6,7 @@ import (
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/vault"
+	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 
 type Focus int
@@ -50,20 +51,29 @@ type Model struct {
 	VaultServiceTUI *vault.Service
 
 	context *app.Context
+
+	ScreenState *state.Async
+	ActionState *state.Async
 }
 
 func New(
 	context *app.Context,
 	vaultServiceTUI *vault.Service,
+	ScreenState *state.Async,
+	ActionState *state.Async,
 ) Model {
 	return Model{
 		Records: []entity.VaultRecord{},
-		Cursor:  0,
-		Focus:   FocusContent,
-		Active:  false,
+
+		Cursor: 0,
+		Focus:  FocusContent,
+		Active: false,
 
 		VaultServiceTUI: vaultServiceTUI,
 		context:         context,
+
+		ScreenState: ScreenState,
+		ActionState: ActionState,
 	}
 }
 
@@ -74,16 +84,20 @@ func (m *Model) Load(
 		return nil
 	}
 
+	m.SelectedVaultAccess = selectedVaultAccess
+	m.ScreenState.Start()
+
 	vaultRecords, err := m.VaultServiceTUI.ListRecords(
 		selectedVaultAccess,
 	)
 	if err != nil {
+		m.ScreenState.Fail(err)
 		return err
 	}
 
-	m.SelectedVaultAccess = selectedVaultAccess
 	m.Records = vaultRecords
 	m.Cursor = 0
+	m.ScreenState.Success()
 
 	return nil
 }
@@ -155,6 +169,7 @@ func (m *Model) saveEdit() {
 		m.EditExpiredAt,
 	)
 	if err != nil {
+		m.ActionState.Fail(err)
 		return
 	}
 
@@ -163,19 +178,22 @@ func (m *Model) saveEdit() {
 	record.Password = m.EditPassword
 	record.ExpiredAt = expiredAt
 
+	m.ActionState.Start()
+
 	_, err = m.VaultServiceTUI.UpdateRecord(
 		m.SelectedVaultAccess,
 		record,
 	)
 	if err != nil {
-		panic(err)
+		m.ActionState.Fail(err)
+		return
 	}
 
-	// Update local record supaya UI langsung berubah.
 	m.Records[m.Cursor] = *record
 
 	m.clearForm()
 	m.Focus = FocusContent
+	m.ActionState.Success()
 }
 
 func (m *Model) saveNew() {
@@ -187,6 +205,7 @@ func (m *Model) saveNew() {
 		m.EditExpiredAt,
 	)
 	if err != nil {
+		m.ActionState.Fail(err)
 		return
 	}
 
@@ -197,12 +216,15 @@ func (m *Model) saveNew() {
 		ExpiredAt: expiredAt,
 	}
 
+	m.ActionState.Start()
+
 	newRecord, err := m.VaultServiceTUI.AppendRecord(
 		m.SelectedVaultAccess,
 		&record,
 	)
 	if err != nil {
-		panic(err)
+		m.ActionState.Fail(err)
+		return
 	}
 
 	m.Records = append(
@@ -214,6 +236,7 @@ func (m *Model) saveNew() {
 
 	m.clearForm()
 	m.Focus = FocusContent
+	m.ActionState.Success()
 }
 
 func (m *Model) clearForm() {

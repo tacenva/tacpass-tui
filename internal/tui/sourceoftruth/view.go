@@ -112,21 +112,40 @@ func (m Model) viewContent() string {
 	return table.View()
 }
 
-func (m Model) viewNavigation() string {
-	if m.Form.Active {
-		return m.Form.Navigation(m.Width)
+func (m Model) viewError() string {
+	if m.ScreenState.Error == nil {
+		return ""
 	}
 
-	if m.Detail.Active {
-		return m.Detail.Navigation()
-	}
-
-	content := components.CrudNavigation(
-		m.Width,
-		m.Cursor < len(m.SoTList),
+	return styles.Error.Render(
+		"[ERROR] " + m.ScreenState.Error.Error(),
 	)
+}
 
-	return styles.Navigation.
-		Width(m.Width).
-		Render(content)
+func (m Model) viewNavigation() string {
+	var navigation string
+
+	switch {
+	case m.Form.Active:
+		navigation = m.Form.Navigation(m.Width)
+
+	case m.Detail.Active:
+		navigation = m.Detail.Navigation()
+
+	default:
+		content := components.CrudNavigation(
+			m.Width,
+			m.Cursor < len(m.SoTList),
+		)
+
+		navigation = styles.Navigation.
+			Width(m.Width).
+			Render(content)
+	}
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		m.viewError(),
+		navigation,
+	)
 }

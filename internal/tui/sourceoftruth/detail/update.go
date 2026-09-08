@@ -7,6 +7,10 @@ import (
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 )
 
+func (m Model) Init() tea.Cmd {
+	return m.vaultTUI.Load()
+}
+
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -14,6 +18,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.Height = msg.Height
 
 		return m, nil
+
+	case vaultTUI.VaultsLoadedMsg:
+		updated, cmd := m.vaultTUI.Update(msg)
+
+		m.vaultTUI = updated
+
+		return m, cmd
 
 	case accessControlTUI.PermissionsLoadedMsg:
 		updated, cmd := m.accessControlTUI.Update(msg)
@@ -108,7 +119,10 @@ func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.SidebarCursor++
 		}
 
-		if m.SidebarCursor == 1 {
+		switch m.SidebarCursor {
+		case 0:
+			return m, m.vaultTUI.Load()
+		case 1:
 			return m, m.accessControlTUI.Load()
 		}
 

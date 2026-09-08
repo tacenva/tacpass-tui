@@ -41,11 +41,22 @@ func (m Model) View() string {
 		),
 	}
 
+	if content := m.viewActionState(); content != "" {
+		rows = append(rows, "", content)
+	}
+
 	return styles.MainContent.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			rows...,
 		),
+	)
+}
+
+func (m Model) viewActionState() string {
+	return components.AsyncStateView(
+		m.ActionState,
+		"Saving...",
 	)
 }
 
