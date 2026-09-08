@@ -8,6 +8,7 @@ import (
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
+	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
 )
 
 var errFormPermissionNil = errors.New("form permission is nil")
@@ -18,6 +19,7 @@ const (
 	FocusNone Focus = iota
 	FocusContent
 	FocusForm
+	FocusUsers
 )
 
 type FormMode int
@@ -56,16 +58,23 @@ type Model struct {
 	FormName       []rune
 	FormPrivilege  entity.Privilege
 	FormPermission *entity.Permission
+
+	UserList userListTUI.Model
 }
 
 func New(
 	appDeps *app.Deps,
 	context *app.Context,
 ) Model {
+	service := accesscontrol.NewService(
+		appDeps,
+		context,
+	)
+
 	return Model{
 		appDeps: appDeps,
 		context: context,
-		service: accesscontrol.NewService(appDeps, context),
+		service: service,
 
 		Focus:  FocusNone,
 		Cursor: 0,
@@ -76,6 +85,11 @@ func New(
 		FormMode:      FormNone,
 		FormCursor:    0,
 		FormPrivilege: entity.PrivilegeRead,
+
+		UserList: userListTUI.New(
+			service,
+			"",
+		),
 	}
 }
 
@@ -148,4 +162,20 @@ func (m *Model) cyclePrivilege(direction int) {
 	}
 
 	m.FormPrivilege = privileges[current]
+}
+
+func (m *Model) openUsers(
+	permission entity.Permission,
+) tea.Cmd {
+	m.UserList = userListTUI.New(
+		m.service,
+		permission.ID,
+	)
+
+	m.UserList.Active = true
+	m.UserList.Focus = userListTUI.FocusContent
+
+	m.Focus = FocusUsers
+
+	return m.UserList.Load()
 }

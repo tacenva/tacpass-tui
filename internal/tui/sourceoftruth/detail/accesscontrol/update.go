@@ -1,12 +1,16 @@
 package accesscontrol
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
+)
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+
 		return m, nil
 
 	case PermissionsLoadedMsg:
@@ -16,7 +20,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		m.Permissions = msg.Permissions
 
-		// len(Permissions) adalah posisi virtual "+ New Access Control".
 		if m.Cursor > len(m.Permissions) {
 			m.Cursor = len(m.Permissions)
 		}
@@ -32,6 +35,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		return m, m.Load()
 
+	case userListTUI.UsersLoadedMsg:
+		updated, cmd := m.UserList.Update(msg)
+		m.UserList = updated
+
+		return m, cmd
+
 	case tea.KeyMsg:
 		switch m.Focus {
 		case FocusContent:
@@ -40,8 +49,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case FocusForm:
 			return m.updateForm(msg)
 
-		default:
-			return m, nil
+		case FocusUsers:
+			updated, cmd := m.UserList.Update(msg)
+			m.UserList = updated
+
+			if m.UserList.Focus == userListTUI.FocusNone {
+				m.UserList.Active = false
+				m.Focus = FocusContent
+				cmd = nil
+			}
+
+			return m, cmd
 		}
 	}
 
@@ -56,7 +74,6 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 	case "down", "j":
-		// len(Permissions) = virtual "+ New Access Control".
 		if m.Cursor < len(m.Permissions) {
 			m.Cursor++
 		}
@@ -67,6 +84,11 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
+			return m, m.openUsers(m.Permissions[m.Cursor])
+		}
+
+	case "e":
 		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
 			m.openUpdateForm(m.Permissions[m.Cursor])
 		}
@@ -127,7 +149,8 @@ func (m Model) updateForm(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.FormName = append(m.FormName, msg.Runes...)
 		}
 
-		if msg.Type == tea.KeyBackspace || msg.Type == tea.KeyDelete {
+		if msg.Type == tea.KeyBackspace ||
+			msg.Type == tea.KeyDelete {
 			if len(m.FormName) > 0 {
 				m.FormName = m.FormName[:len(m.FormName)-1]
 			}

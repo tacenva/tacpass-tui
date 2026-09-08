@@ -10,11 +10,16 @@ import (
 )
 
 func (m Model) View() string {
-	if m.Focus == FocusForm {
+	switch m.Focus {
+	case FocusForm:
 		return m.viewForm()
-	}
 
-	return m.viewContent()
+	case FocusUsers:
+		return m.UserList.View()
+
+	default:
+		return m.viewContent()
+	}
 }
 
 func (m Model) viewContent() string {
@@ -107,9 +112,7 @@ func (m Model) viewForm() string {
 
 		"",
 		styles.Muted.Render(
-			fmt.Sprintf(
-				"Use ←→ to change privilege",
-			),
+			fmt.Sprintf("Use ←→ to change privilege"),
 		),
 	)
 
@@ -125,27 +128,41 @@ func (m Model) BreadcrumbItems() []string {
 		switch m.FormMode {
 		case FormNew:
 			items = append(items, "New")
+
 		case FormUpdate:
 			items = append(items, "Update")
 		}
+	}
+
+	if m.Focus == FocusUsers {
+		items = append(
+			items,
+			m.UserList.BreadcrumbItems()...,
+		)
 	}
 
 	return items
 }
 
 func (m Model) Navigation() string {
-	if m.Focus == FocusForm {
+	switch m.Focus {
+	case FocusForm:
 		return components.FormNavigation(
 			m.Width,
 			"↵",
 		)
-	}
 
-	return styles.NavigationItems(
-		m.Width,
-		styles.Key("↑↓", "Navigate"),
-		styles.Key("↵", "Select"),
-		styles.Key("Esc", "Back"),
-		styles.Key("q", "Quit"),
-	)
+	case FocusUsers:
+		return m.UserList.Navigation()
+
+	default:
+		return styles.NavigationItems(
+			m.Width,
+			styles.Key("↑↓", "Navigate"),
+			styles.Key("↵", "Select"),
+			styles.Key("e", "Edit"),
+			styles.Key("Esc", "Back"),
+			styles.Key("q", "Quit"),
+		)
+	}
 }
