@@ -16,16 +16,28 @@ func (m Model) View() string {
 	rows := []string{
 		styles.Title.Render(title),
 		"",
-		m.viewField("Hostname", m.Hostname, FieldHostname),
+		components.FormField(
+			"Hostname",
+			m.Hostname,
+			m.EditField == FieldHostname,
+		),
 		"",
-		m.viewField("Address", m.Address, FieldAddress),
+		components.FormField(
+			"Address",
+			m.Address,
+			m.EditField == FieldAddress,
+		),
 		"",
-		m.viewField("Public Key", m.PublicKey, FieldPublicKey),
+		components.FormField(
+			"Public Key",
+			m.PublicKey,
+			m.EditField == FieldPublicKey,
+		),
 		"",
-		m.viewField(
+		components.FormField(
 			"Private Key",
 			m.privateKeyView(),
-			FieldPrivateKey,
+			m.EditField == FieldPrivateKey,
 		),
 	}
 
@@ -34,38 +46,6 @@ func (m Model) View() string {
 			lipgloss.Left,
 			rows...,
 		),
-	)
-}
-
-func (m Model) viewField(
-	label string,
-	value string,
-	field Field,
-) string {
-	prefix := "  "
-
-	if m.EditField == field {
-		prefix = "> "
-	}
-
-	labelView := styles.Normal.Render(
-		prefix + label,
-	)
-
-	valueView := styles.Normal.Render(
-		"    " + value,
-	)
-
-	if m.EditField == field {
-		valueView = styles.Selected.Render(
-			"    " + value + "_",
-		)
-	}
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		labelView,
-		valueView,
 	)
 }
 

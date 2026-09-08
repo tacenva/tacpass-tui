@@ -81,84 +81,35 @@ func (m Model) viewContent() string {
 		return m.Detail.View()
 	}
 
-	header := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().
-			Width(30).
-			Render(styles.Muted.Render("Hostname")),
-
-		lipgloss.NewStyle().
-			Width(50).
-			Render(styles.Muted.Render("Address")),
-	)
-
-	items := []string{
-		header,
+	table := components.Table{
+		Columns: []components.TableColumn{
+			{
+				Title: "Hostname",
+				Width: 30,
+			},
+			{
+				Title: "Address",
+				Width: 50,
+			},
+		},
+		Cursor:   m.Cursor,
+		AddLabel: "New Node",
+		OnFocus:  true,
 	}
 
-	for i, sot := range m.SoTList {
-		hostname := sot.Hostname
-		address := sot.Address
-
-		if i == m.Cursor {
-			hostname = styles.Selected.Render(
-				"> " + hostname,
-			)
-
-			address = styles.Selected.Render(
-				address,
-			)
-		} else {
-			hostname = styles.Normal.Render(
-				"  " + hostname,
-			)
-
-			address = styles.Normal.Render(
-				address,
-			)
-		}
-
-		item := lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			lipgloss.NewStyle().
-				Width(30).
-				Render(hostname),
-
-			lipgloss.NewStyle().
-				Width(50).
-				Render(address),
-		)
-
-		items = append(items, item)
-	}
-
-	if len(m.SoTList) == 0 {
-		items = append(
-			items,
-			styles.Muted.Render(
-				"  No Source of Truth found.",
-			),
+	for _, sot := range m.SoTList {
+		table.Rows = append(
+			table.Rows,
+			components.TableRow{
+				Values: []string{
+					sot.Hostname,
+					sot.Address,
+				},
+			},
 		)
 	}
 
-	newIndex := len(m.SoTList)
-
-	if m.Cursor == newIndex {
-		items = append(
-			items,
-			styles.Selected.PaddingTop(1).Render("> Add Node"),
-		)
-	} else {
-		items = append(
-			items,
-			styles.Normal.PaddingTop(1).Render("+ New Node"),
-		)
-	}
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		items...,
-	)
+	return table.View()
 }
 
 func (m Model) viewNavigation() string {

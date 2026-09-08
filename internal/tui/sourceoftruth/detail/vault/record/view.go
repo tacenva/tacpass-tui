@@ -118,28 +118,28 @@ func (m Model) viewEdit(title string) string {
 	rows := []string{
 		styles.Title.Render(title),
 		"",
-		m.viewEditField(
+		components.FormField(
 			"Name",
 			m.EditName,
-			FieldName,
+			m.EditField == FieldName,
 		),
 		"",
-		m.viewEditField(
+		components.FormField(
 			"Endpoint",
 			m.EditEndpoint,
-			FieldEndpoint,
+			m.EditField == FieldEndpoint,
 		),
 		"",
-		m.viewEditField(
+		components.FormField(
 			"Password",
 			m.EditPassword,
-			FieldPassword,
+			m.EditField == FieldPassword,
 		),
 		"",
-		m.viewEditField(
+		components.FormField(
 			"Expired At",
 			m.EditExpiredAt,
-			FieldExpiredAt,
+			m.EditField == FieldExpiredAt,
 		),
 	}
 
@@ -148,38 +148,6 @@ func (m Model) viewEdit(title string) string {
 			lipgloss.Left,
 			rows...,
 		),
-	)
-}
-
-func (m Model) viewEditField(
-	label string,
-	value string,
-	field EditField,
-) string {
-	prefix := "  "
-
-	if m.EditField == field {
-		prefix = "> "
-	}
-
-	labelView := styles.Normal.Render(
-		prefix + label,
-	)
-
-	valueView := styles.Normal.Render(
-		"    " + value,
-	)
-
-	if m.EditField == field {
-		valueView = styles.Selected.Render(
-			"    " + value + "_",
-		)
-	}
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		labelView,
-		valueView,
 	)
 }
 

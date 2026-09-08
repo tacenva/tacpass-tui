@@ -23,62 +23,37 @@ func (m Model) View() string {
 		)
 	}
 
-	var rows []string
-	if m.ErrorMessage != "" {
+	var rows []components.TableRow
+
+	for _, vaultaccess := range m.VaultAccessList {
 		rows = append(
 			rows,
-			styles.Error.Render(m.ErrorMessage),
-			"",
+			components.TableRow{
+				Values: []string{
+					vaultaccess.Vault.Name,
+				},
+			},
 		)
 	}
 
-	for i, vaultaccess := range m.VaultAccessList {
-		selected := i == m.Cursor && m.Focus == FocusContent
-
-		prefix := ""
-		if m.Focus == FocusContent {
-			prefix = "  "
-		}
-
-		if selected {
-			prefix = "> "
-		}
-
-		row := prefix + vaultaccess.Vault.Name
-
-		if selected {
-			row = styles.Selected.Render(row)
-		} else {
-			row = styles.Normal.Render(row)
-		}
-
-		rows = append(rows, row)
+	table := components.Table{
+		Columns: []components.TableColumn{
+			{
+				Title: "Vault",
+				Width: 50,
+			},
+		},
+		Rows:     rows,
+		Cursor:   m.Cursor,
+		AddLabel: "New Vault",
+		OnFocus:  m.Focus == FocusContent,
 	}
-
-	if len(rows) == 0 {
-		rows = append(
-			rows,
-			styles.Muted.Render("No vault found."),
-		)
-	}
-
-	addVault := "+ New Vault"
-
-	if m.Cursor == len(m.VaultAccessList) && m.Focus == FocusContent {
-		addVault = styles.Selected.Render("> Add Vault")
-	} else {
-		addVault = styles.Muted.Render(addVault)
-	}
-
-	rows = append(rows, "", addVault)
 
 	return styles.MainContent.Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			rows...,
-		),
+		table.View(),
 	)
 }
+
 func (m Model) BreadcrumbItems() []string {
 	items := []string{
 		"Vault",
