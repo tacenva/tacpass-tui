@@ -3,6 +3,7 @@ package form
 import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tacenva/tacpass-tui/internal/styles"
+	"github.com/tacenva/tacpass-tui/internal/tui/components"
 )
 
 func (m Model) View() string {
@@ -88,13 +89,7 @@ func (m Model) privateKeyView() string {
 }
 
 func (m Model) Navigation(width int) string {
-	content := styles.NavigationItems(
-		width,
-		styles.Key("Tab", "Next Field"),
-		styles.Key("↑↓", "Navigate"),
-		styles.Key("Ctrl+S", "Save"),
-		styles.Key("Esc", "Cancel"),
-	)
+	content := components.FormNavigation(m.Width, "Ctrl+S")
 
 	return styles.Navigation.
 		Width(width).

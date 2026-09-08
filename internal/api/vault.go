@@ -1,10 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -12,22 +12,6 @@ func (c *Client) ListVaults(
 	address string,
 	result any,
 ) error {
-	debugFile, err := os.OpenFile(
-		"debug.log",
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0644,
-	)
-	if err == nil {
-		defer debugFile.Close()
-
-		fmt.Fprintf(
-			debugFile,
-			"ListVaults: GET %s/vault\nToken exists: %t\n",
-			strings.TrimRight(address, "/"),
-			c.Token != "",
-		)
-	}
-
 	return c.Get(
 		address,
 		"/vault",
@@ -161,14 +145,14 @@ func (c *Client) doRaw(
 	path string,
 	data []byte,
 ) ([]byte, error) {
-	url := strings.TrimRight(address, "/") +
+	requestURL := strings.TrimRight(address, "/") +
 		"/" +
 		strings.TrimLeft(path, "/")
 
 	req, err := http.NewRequest(
 		method,
-		url,
-		strings.NewReader(string(data)),
+		requestURL,
+		bytes.NewReader(data),
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -198,7 +182,14 @@ func (c *Client) doRaw(
 		"Bearer "+c.Token,
 	)
 
-	resp, err := c.HTTPClient.Do(req)
+	httpClient, err := c.httpClient(
+		strings.TrimRight(address, "/"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"request failed: %w",
@@ -208,7 +199,8 @@ func (c *Client) doRaw(
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 ||
+		resp.StatusCode >= 300 {
 		return nil, parseHTTPError(resp)
 	}
 
@@ -221,4 +213,23 @@ func (c *Client) doRaw(
 	}
 
 	return body, nil
+}
+
+func (c *Client) OutOfSync(
+	address string,
+	vaultID string,
+	replicaHash string,
+	result any,
+) error {
+	path := fmt.Sprintf(
+		"/vault/%s/out-of-sync?hash=%s",
+		vaultID,
+		replicaHash,
+	)
+
+	return c.Get(
+		address,
+		path,
+		result,
+	)
 }

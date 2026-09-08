@@ -11,6 +11,10 @@ const defaultPort = "9443"
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width
+		m.Height = msg.Height
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":

@@ -6,6 +6,7 @@ import (
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/util/keyring"
 
+	"github.com/tacenva/tacpass-tui/internal/api"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
@@ -70,6 +71,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		updated, cmd := m.Form.Update(msg)
 		m.Form = updated
+
 		return m, cmd
 	}
 
@@ -80,12 +82,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if m.Detail.Active {
 		updated, cmd := m.Detail.Update(msg)
 		m.Detail = updated
+
 		return m, cmd
 	}
 
 	// =========================
 	// LIST
 	// =========================
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
@@ -102,12 +106,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 
 		case "down", "j":
-			if m.Cursor < len(m.SoTList)-1 {
+			maxCursor := len(m.SoTList)
+
+			if m.Cursor < maxCursor {
 				m.Cursor++
 			}
-
-		case "n":
-			m.Form = form.New()
 
 		case "e":
 			if len(m.SoTList) == 0 {
@@ -124,11 +127,34 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			)
 
 		case "enter":
+			if m.Cursor == len(m.SoTList) {
+				m.Form = form.New()
+				return m, nil
+			}
+
 			if len(m.SoTList) == 0 {
 				return m, nil
 			}
 
 			selectedSoT := m.SoTList[m.Cursor]
+
+			isRemote := selectedSoT.Address != "localhost"
+
+			if isRemote {
+				m.appDeps.Client.ConfigureTLS(
+					selectedSoT.Address,
+					api.TLSConfig{
+						Fingerprint: selectedSoT.TLSFingerprint,
+
+						OnFirstTrust: func(
+							fingerprint string,
+						) error {
+							selectedSoT.TLSFingerprint = fingerprint
+							return m.SoTService.Update(&selectedSoT)
+						},
+					},
+				)
+			}
 
 			nodeDBDir := m.appDeps.Config.Path(
 				config.NodeDirName,
@@ -136,14 +162,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				"vault",
 			)
 
-			m.appDeps.Client.SetToken(selectedSoT.AuthToken)
+			m.appDeps.Client.SetToken(
+				selectedSoT.AuthToken,
+			)
 
 			m.Detail = detail.New(
 				m.appDeps,
 				&app.Context{
 					SelectedSoT: &selectedSoT,
 					NodeDB:      database.New(nodeDBDir),
-					IsRemote:    selectedSoT.Address != "localhost",
+					IsRemote:    isRemote,
 				},
 				m.masterKey,
 			)

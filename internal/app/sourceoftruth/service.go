@@ -64,7 +64,10 @@ func (s *Service) Access(masterPassword string) error {
 	return nil
 }
 
-func (s *Service) Create(address string, keypair keyring.KeyPair) (string, error) {
+func (s *Service) Create(
+	address string,
+	keypair keyring.KeyPair,
+) (string, error) {
 	if s.sotFile == nil {
 		return "", ErrForbidden
 	}
@@ -73,6 +76,22 @@ func (s *Service) Create(address string, keypair keyring.KeyPair) (string, error
 	if err != nil {
 		return "", err
 	}
+
+	var fingerprint string
+
+	s.appDeps.Client.ConfigureTLS(
+		address,
+		api.TLSConfig{
+			Fingerprint: "",
+
+			OnFirstTrust: func(
+				newFingerprint string,
+			) error {
+				fingerprint = newFingerprint
+				return nil
+			},
+		},
+	)
 
 	response, err := s.appDeps.Client.Enroll(
 		address,
@@ -86,10 +105,11 @@ func (s *Service) Create(address string, keypair keyring.KeyPair) (string, error
 	}
 
 	return s.sotFile.Insert(&entity.SourceOfTruth{
-		Hostname:  hostname,
-		Address:   address,
-		AuthToken: response.AuthToken,
-		KeyPair:   keypair,
+		Hostname:       hostname,
+		Address:        address,
+		AuthToken:      response.AuthToken,
+		KeyPair:        keypair,
+		TLSFingerprint: fingerprint,
 	})
 }
 

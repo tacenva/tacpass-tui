@@ -188,17 +188,86 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 		len(vaultAccessList),
 	)
 
-	if len(vaultAccessList) == 0 &&
-		s.context.SelectedSoT.Address != "localhost" {
-
+	if s.context.IsRemote {
 		debugVault(
 			"No local vault data, syncing from daemon",
 		)
 
-		return s.Sync()
+		outOfSync, err := s.OutOfSync()
+		if err != nil {
+			return nil, err
+		}
+
+		if outOfSync {
+			return s.Sync()
+		}
 	}
 
 	return vaultAccessList, nil
+}
+
+func (s *Service) OutOfSync() (bool, error) {
+	vaultPath := s.appDeps.Config.Path(
+		config.NodeDirName,
+		s.context.SelectedSoT.ID,
+		"vault",
+	)
+
+	debugVault(
+		"Vault path: %s",
+		vaultPath,
+	)
+
+	db := database.New(
+		vaultPath,
+	)
+
+	vaultFile, err := db.RawFile(
+		"vault",
+	)
+	if err != nil {
+		debugVault(
+			"db.RawFile error: %v",
+			err,
+		)
+
+		return false, err
+	}
+
+	hashVal, err := vaultFile.Hash()
+	if err != nil {
+		debugVault(
+			"vaultFile.Hash error: %v",
+			err,
+		)
+
+		return false, err
+	}
+
+	if !s.context.IsRemote {
+		return false, nil
+	}
+
+	result := struct {
+		OutOfSync bool `json:"out_of_sync"`
+	}{}
+
+	err = s.appDeps.Client.OutOfSync(
+		s.context.SelectedSoT.Address,
+		s.context.SelectedSoT.ID,
+		hashVal,
+		&result,
+	)
+	if err != nil {
+		debugVault(
+			"client.OutOfSync error: %v",
+			err,
+		)
+
+		return false, err
+	}
+
+	return result.OutOfSync, nil
 }
 
 func (s *Service) Sync() ([]entity.VaultAccess, error) {

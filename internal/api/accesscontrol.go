@@ -2,71 +2,85 @@ package api
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
-	coreEntity "github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/util/keyring"
 )
 
-type AccessControlCreateRequest struct {
-	Privilege coreEntity.Privilege `json:"privilege"`
+type AccessControlCreateResponse struct {
+	Permission *entity.Permission `json:"permission"`
+	KeyPair    *keyring.KeyPair   `json:"keypair"`
 }
 
-type AccessControlPrivilegeRequest struct {
-	Privilege coreEntity.Privilege `json:"privilege"`
-}
-
-func (c *Client) ListAccessControl(
+func (c *Client) ListAccessControls(
 	address string,
-) ([]coreEntity.Permission, error) {
-	var response []coreEntity.Permission
+) ([]entity.Permission, error) {
+	var permissions []entity.Permission
 
 	if err := c.Get(
 		address,
 		"/access-control",
-		&response,
+		&permissions,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"list access controls: %w",
+			err,
+		)
 	}
 
-	return response, nil
+	return permissions, nil
 }
 
-func (c *Client) GetAccessControlByPublicKey(
+func (c *Client) GetAccessControl(
 	address string,
-	publicKey string,
-) (*coreEntity.Permission, error) {
-	var response coreEntity.Permission
+	id string,
+) (*entity.Permission, error) {
+	id = strings.TrimSpace(id)
 
-	path := fmt.Sprintf(
-		"/access-control/public-key/%s",
-		publicKey,
-	)
+	if id == "" {
+		return nil, fmt.Errorf("access control id is required")
+	}
+
+	var permission entity.Permission
 
 	if err := c.Get(
 		address,
-		path,
-		&response,
+		"/access-control/"+url.PathEscape(id),
+		&permission,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"get access control: %w",
+			err,
+		)
 	}
 
-	return &response, nil
+	return &permission, nil
 }
 
 func (c *Client) CreateAccessControl(
 	address string,
-	privilege coreEntity.Privilege,
-) (*coreEntity.Permission, error) {
-	var response coreEntity.Permission
+	privilege entity.Privilege,
+) (*AccessControlCreateResponse, error) {
+	request := struct {
+		Privilege entity.Privilege `json:"privilege"`
+	}{
+		Privilege: privilege,
+	}
+
+	var response AccessControlCreateResponse
 
 	if err := c.Post(
 		address,
 		"/access-control",
-		AccessControlCreateRequest{
-			Privilege: privilege,
-		},
+		request,
 		&response,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"create access control: %w",
+			err,
+		)
 	}
 
 	return &response, nil
@@ -75,103 +89,141 @@ func (c *Client) CreateAccessControl(
 func (c *Client) ChangeAccessControlPrivilege(
 	address string,
 	id string,
-	privilege coreEntity.Privilege,
+	privilege entity.Privilege,
 ) error {
-	path := fmt.Sprintf(
-		"/access-control/%s/privilege",
-		id,
-	)
+	id = strings.TrimSpace(id)
 
-	return c.Patch(
+	if id == "" {
+		return fmt.Errorf("access control id is required")
+	}
+
+	request := struct {
+		Privilege entity.Privilege `json:"privilege"`
+	}{
+		Privilege: privilege,
+	}
+
+	if err := c.Patch(
 		address,
-		path,
-		AccessControlPrivilegeRequest{
-			Privilege: privilege,
-		},
+		"/access-control/"+url.PathEscape(id)+"/privilege",
+		request,
 		nil,
-	)
+	); err != nil {
+		return fmt.Errorf(
+			"change access control privilege: %w",
+			err,
+		)
+	}
+
+	return nil
 }
 
 func (c *Client) RevokeAccessControl(
 	address string,
 	id string,
 ) error {
-	path := fmt.Sprintf(
-		"/access-control/%s",
-		id,
-	)
+	id = strings.TrimSpace(id)
 
-	return c.Delete(
+	if id == "" {
+		return fmt.Errorf("access control id is required")
+	}
+
+	if err := c.Delete(
 		address,
-		path,
+		"/access-control/"+url.PathEscape(id),
 		nil,
-	)
+	); err != nil {
+		return fmt.Errorf(
+			"revoke access control: %w",
+			err,
+		)
+	}
+
+	return nil
 }
 
 func (c *Client) ListAccessControlUsers(
 	address string,
 	permissionID string,
-) ([]coreEntity.User, error) {
-	var response []coreEntity.User
+) ([]entity.User, error) {
+	permissionID = strings.TrimSpace(permissionID)
 
-	path := fmt.Sprintf(
-		"/access-control/%s/users",
-		permissionID,
-	)
+	if permissionID == "" {
+		return nil, fmt.Errorf(
+			"permission id is required",
+		)
+	}
+
+	var users []entity.User
 
 	if err := c.Get(
 		address,
-		path,
-		&response,
+		"/access-control/"+url.PathEscape(permissionID)+"/users",
+		&users,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"list access control users: %w",
+			err,
+		)
 	}
 
-	return response, nil
+	return users, nil
 }
 
-func (c *Client) ApproveUser(
+func (c *Client) ApproveAccessControlUser(
 	address string,
 	userID string,
-) (*coreEntity.User, error) {
-	var response coreEntity.User
+) (*entity.User, error) {
+	userID = strings.TrimSpace(userID)
 
-	path := fmt.Sprintf(
-		"/access-control/users/%s/approve",
-		userID,
-	)
+	if userID == "" {
+		return nil, fmt.Errorf(
+			"user id is required",
+		)
+	}
+
+	var user entity.User
 
 	if err := c.Post(
 		address,
-		path,
+		"/access-control/users/"+url.PathEscape(userID)+"/approve",
 		nil,
-		&response,
+		&user,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"approve access control user: %w",
+			err,
+		)
 	}
 
-	return &response, nil
+	return &user, nil
 }
 
-func (c *Client) RevokeUser(
+func (c *Client) RevokeAccessControlUser(
 	address string,
 	userID string,
-) (*coreEntity.User, error) {
-	var response coreEntity.User
+) (*entity.User, error) {
+	userID = strings.TrimSpace(userID)
 
-	path := fmt.Sprintf(
-		"/access-control/users/%s/revoke",
-		userID,
-	)
+	if userID == "" {
+		return nil, fmt.Errorf(
+			"user id is required",
+		)
+	}
+
+	var user entity.User
 
 	if err := c.Post(
 		address,
-		path,
+		"/access-control/users/"+url.PathEscape(userID)+"/revoke",
 		nil,
-		&response,
+		&user,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"revoke access control user: %w",
+			err,
+		)
 	}
 
-	return &response, nil
+	return &user, nil
 }

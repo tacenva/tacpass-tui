@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/tacenva/tacpass-tui/internal/styles"
+	"github.com/tacenva/tacpass-tui/internal/tui/components"
 )
 
 func (m Model) View() string {
@@ -140,6 +141,20 @@ func (m Model) viewContent() string {
 		)
 	}
 
+	newIndex := len(m.SoTList)
+
+	if m.Cursor == newIndex {
+		items = append(
+			items,
+			styles.Selected.PaddingTop(1).Render("> Add Node"),
+		)
+	} else {
+		items = append(
+			items,
+			styles.Normal.PaddingTop(1).Render("+ New Node"),
+		)
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		items...,
@@ -155,14 +170,9 @@ func (m Model) viewNavigation() string {
 		return m.Detail.Navigation()
 	}
 
-	content := styles.NavigationItems(
+	content := components.CrudNavigation(
 		m.Width,
-		styles.Key("↑↓", "Navigate"),
-		styles.Key("↵", "Select"),
-		styles.Key("n", "New"),
-		styles.Key("e", "Edit"),
-		styles.Key("Esc", "Back"),
-		styles.Key("q", "Quit"),
+		m.Cursor < len(m.SoTList),
 	)
 
 	return styles.Navigation.

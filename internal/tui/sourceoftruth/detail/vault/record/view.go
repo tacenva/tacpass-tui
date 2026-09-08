@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tacenva/tacpass-tui/internal/styles"
+	"github.com/tacenva/tacpass-tui/internal/tui/components"
 )
 
 func (m Model) View() string {
@@ -182,42 +183,33 @@ func (m Model) viewEditField(
 	)
 }
 
-func (m Model) Breadcrumb() []string {
-	if m.SelectedVaultAccess == nil {
-		return []string{"Vault"}
+func (m Model) BreadcrumbItems() []string {
+	items := []string{
+		"Records",
 	}
-
-	return []string{
-		"Vault",
-		m.SelectedVaultAccess.Vault.Name,
+	switch m.Focus {
+	case FocusEdit:
+		items = append(items, "Edit")
+	case FocusNew:
+		items = append(items, "New")
 	}
+	return items
 }
 
 func (m Model) Navigation() string {
+	var content string
 	if m.Focus == FocusEdit || m.Focus == FocusNew {
-		content := styles.NavigationItems(
+		content = components.FormNavigation(m.Width, "Ctrl+S")
+	} else {
+		content = styles.NavigationItems(
 			m.Width,
-			styles.Key("Tab", "Next Field"),
 			styles.Key("↑↓", "Navigate"),
-			styles.Key("Enter", "Save"),
-			styles.Key("Esc", "Cancel"),
+			styles.Key("↵", "Edit"),
 			styles.Key("p", "Show Password"),
+			styles.Key("Esc", "Back"),
+			styles.Key("q", "Quit"),
 		)
-
-		return styles.Navigation.
-			Width(m.Width).
-			Render(content)
 	}
-
-	content := styles.NavigationItems(
-		m.Width,
-		styles.Key("↑↓", "Navigate"),
-		styles.Key("↵", "Edit"),
-		styles.Key("n", "New"),
-		styles.Key("p", "Show Password"),
-		styles.Key("Esc", "Back"),
-		styles.Key("q", "Quit"),
-	)
 
 	return styles.Navigation.
 		Width(m.Width).

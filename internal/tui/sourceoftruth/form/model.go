@@ -12,6 +12,9 @@ const (
 type Model struct {
 	Active bool
 
+	Width  int
+	Height int
+
 	Hostname   string
 	Address    string
 	PublicKey  string

@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/tacenva/tacpass-tui/internal/styles"
+	"github.com/tacenva/tacpass-tui/internal/tui/components"
 )
 
 func (m Model) View() string {
@@ -59,7 +60,7 @@ func (m Model) viewContent() string {
 		return m.vaultTUI.View()
 
 	case 1:
-		return styles.Muted.Render("Permission")
+		return m.accessControlTUI.View()
 
 	case 2:
 		return styles.Muted.Render("Setting")
@@ -69,33 +70,61 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) Breadcrumb() []string {
-	// if m.Detail.Active {
-	// 	items = append(items, m.Detail.BreadcrumbItems()...)
-	// }
-	return []string{"Detail"}
+	breadcrumbItems := []string{
+		"Detail",
+	}
+	if m.Focus == FocusContent {
+		switch m.SidebarCursor {
+		case 0:
+			items := m.vaultTUI.BreadcrumbItems()
+
+			breadcrumbItems = append(
+				breadcrumbItems,
+				items...,
+			)
+
+		case 1:
+			// ...
+
+		case 2:
+			// ...
+		}
+	}
+
+	return breadcrumbItems
 }
 
 func (m Model) Navigation() string {
 	var content string
+
 	switch m.Focus {
 	case FocusSidebar:
-		content = styles.NavigationItems(
+		content = components.CrudNavigation(
 			m.Width,
-			styles.Key("↑↓", "Navigate"),
-			styles.Key("↵", "Select"),
-			styles.Key("Esc", "Back"),
-			styles.Key("q", "Quit"),
+			false,
 		)
 
 	case FocusContent:
-		content = styles.NavigationItems(
-			m.Width,
-			styles.Key("↑↓", "Navigate"),
-			styles.Key("↵", "Select"),
-			styles.Key("Del", "Delete"),
-			styles.Key("Esc", "Back"),
-			styles.Key("q", "Quit"),
-		)
+		switch m.SidebarCursor {
+		case 0:
+			content = m.vaultTUI.Navigation()
+
+		case 1:
+			content = styles.NavigationItems(
+				m.Width,
+				styles.Key("↑↓", "Navigate"),
+				styles.Key("↵", "Select"),
+				styles.Key("Esc", "Back"),
+				styles.Key("q", "Quit"),
+			)
+
+		case 2:
+			content = styles.NavigationItems(
+				m.Width,
+				styles.Key("Esc", "Back"),
+				styles.Key("q", "Quit"),
+			)
+		}
 
 	case FocusNewVault:
 		content = styles.NavigationItems(
