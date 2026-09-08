@@ -46,10 +46,12 @@ func (t Table) View() string {
 		)
 	}
 
-	items = append(
-		items,
-		t.addRow(),
-	)
+	if t.AddLabel != "" {
+		items = append(
+			items,
+			t.addRow(),
+		)
+	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
