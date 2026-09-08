@@ -2,9 +2,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/permission"
-	"github.com/tacenva/tacpass-core/user"
+	coreApp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	SoTService "github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth"
@@ -33,19 +31,14 @@ type Model struct {
 
 func New(
 	deps *app.Deps,
+	coreServices *coreApp.Services,
 ) Model {
-	permissionRepository := permission.NewRepository(deps.SqliteDB)
-	permissionService := permission.NewService(permissionRepository)
-	userRepository := user.NewRepository(deps.SqliteDB)
-	userService := user.NewService(userRepository)
-
-	authService := auth.NewService(userService, permissionService)
-	soTService := SoTService.NewService(deps, authService, permissionService)
+	soTService := SoTService.NewService(deps, coreServices.Auth, coreServices.Permission)
 
 	return Model{
 		Screen:        ScreenLogin,
 		sotService:    soTService,
-		SourceOfTruth: sourceoftruth.New(deps, soTService, authService, permissionService),
+		SourceOfTruth: sourceoftruth.New(deps, soTService, coreServices),
 	}
 }
 

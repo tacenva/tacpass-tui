@@ -174,6 +174,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					IsRemote:    isRemote,
 				},
 				m.masterKey,
+				m.coreServices.Vault,
+				m.coreServices.Auth,
+				m.coreServices.AccessControl,
 			)
 		}
 	}

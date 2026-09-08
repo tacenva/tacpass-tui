@@ -1,6 +1,9 @@
 package detail
 
 import (
+	"github.com/tacenva/tacpass-core/accesscontrol"
+	"github.com/tacenva/tacpass-core/auth"
+	"github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
 
 	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
@@ -35,11 +38,16 @@ func New(
 	appDeps *app.Deps,
 	ctx *app.Context,
 	masterKey string,
+	coreVaultService *vault.Service,
+	authService *auth.Service,
+	coreACService *accesscontrol.Service,
 ) Model {
 	v := vaultTUI.New(
 		appDeps,
 		ctx,
 		masterKey,
+		coreVaultService,
+		authService,
 	)
 
 	v.Load()
@@ -47,6 +55,7 @@ func New(
 	a := accessControlTUI.New(
 		appDeps,
 		ctx,
+		coreACService,
 	)
 
 	return Model{

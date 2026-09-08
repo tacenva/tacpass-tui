@@ -11,10 +11,7 @@ import (
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-core/permission"
-	"github.com/tacenva/tacpass-core/user"
 	vaultCore "github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-core/vaultaccess"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/config"
 )
@@ -35,46 +32,9 @@ func NewService(
 	appDeps *app.Deps,
 	context *app.Context,
 	masterKey string,
+	vaultService *vaultCore.Service,
+	authService *auth.Service,
 ) *Service {
-	userRepository := user.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	userService := user.NewService(
-		userRepository,
-	)
-
-	permissionRepository := permission.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	permissionService := permission.NewService(
-		permissionRepository,
-	)
-
-	authService := auth.NewService(
-		userService,
-		permissionService,
-	)
-
-	vaultaccessRepository := vaultaccess.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	vaultaccessService := vaultaccess.NewService(
-		vaultaccessRepository,
-	)
-
-	vaultRepository := vaultCore.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	vaultService := vaultCore.NewService(
-		vaultRepository,
-		appDeps.AppDB,
-		vaultaccessService,
-	)
-
 	return &Service{
 		appDeps:      appDeps,
 		context:      context,

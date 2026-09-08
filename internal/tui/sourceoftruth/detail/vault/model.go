@@ -1,7 +1,9 @@
 package vault
 
 import (
+	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
+	coreVault "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
@@ -35,8 +37,8 @@ type Model struct {
 	ErrorMessage string
 }
 
-func New(appDeps *app.Deps, context *app.Context, masterKey string) Model {
-	vaultServiceTUI := vault.NewService(appDeps, context, masterKey)
+func New(appDeps *app.Deps, context *app.Context, masterKey string, coreVaultService *coreVault.Service, authService *auth.Service) Model {
+	vaultServiceTUI := vault.NewService(appDeps, context, masterKey, coreVaultService, authService)
 	return Model{
 		Active: true,
 		Cursor: 0,

@@ -3,10 +3,8 @@ package accesscontrol
 import (
 	"fmt"
 
-	acCore "github.com/tacenva/tacpass-core/accesscontrol"
+	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-core/permission"
-	"github.com/tacenva/tacpass-core/user"
 	"github.com/tacenva/tacpass-core/util/keyring"
 
 	"github.com/tacenva/tacpass-tui/internal/app"
@@ -16,38 +14,18 @@ type Service struct {
 	appDeps *app.Deps
 	context *app.Context
 
-	accesscontrolService *acCore.Service
+	coreACService *coreAC.Service
 }
 
 func NewService(
 	appDeps *app.Deps,
 	context *app.Context,
+	coreACService *coreAC.Service,
 ) *Service {
-	userRepository := user.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	userService := user.NewService(
-		userRepository,
-	)
-
-	permissionRepository := permission.NewRepository(
-		appDeps.SqliteDB,
-	)
-
-	permissionService := permission.NewService(
-		permissionRepository,
-	)
-
-	accesscontrolService := acCore.NewService(
-		userService,
-		permissionService,
-	)
-
 	return &Service{
-		appDeps:              appDeps,
-		context:              context,
-		accesscontrolService: accesscontrolService,
+		appDeps:       appDeps,
+		context:       context,
+		coreACService: coreACService,
 	}
 }
 
@@ -62,7 +40,7 @@ func (s *Service) List() ([]entity.Permission, error) {
 		)
 	}
 
-	return s.accesscontrolService.List()
+	return s.coreACService.List()
 }
 
 func (s *Service) Get(
@@ -79,7 +57,7 @@ func (s *Service) Get(
 		)
 	}
 
-	return s.accesscontrolService.Get(id)
+	return s.coreACService.Get(id)
 }
 
 func (s *Service) Create(
@@ -105,7 +83,7 @@ func (s *Service) Create(
 		return result.Permission, result.KeyPair, nil
 	}
 
-	return s.accesscontrolService.Create(
+	return s.coreACService.Create(
 		name,
 		privilege,
 	)
@@ -127,7 +105,7 @@ func (s *Service) ChangeName(
 		)
 	}
 
-	return s.accesscontrolService.ChangeName(id, name)
+	return s.coreACService.ChangeName(id, name)
 }
 
 func (s *Service) ChangePrivilege(
@@ -148,7 +126,7 @@ func (s *Service) ChangePrivilege(
 		)
 	}
 
-	return s.accesscontrolService.ChangePrivilege(
+	return s.coreACService.ChangePrivilege(
 		id,
 		privilege,
 	)
@@ -170,7 +148,7 @@ func (s *Service) Revoke(
 		)
 	}
 
-	return s.accesscontrolService.Revoke(id)
+	return s.coreACService.Revoke(id)
 }
 
 func (s *Service) UserList(
@@ -189,7 +167,7 @@ func (s *Service) UserList(
 		)
 	}
 
-	return s.accesscontrolService.UserList(
+	return s.coreACService.UserList(
 		permissionID,
 	)
 }
@@ -210,7 +188,7 @@ func (s *Service) ApproveUser(
 		)
 	}
 
-	return s.accesscontrolService.ApproveUser(
+	return s.coreACService.ApproveUser(
 		userID,
 	)
 }
@@ -231,7 +209,7 @@ func (s *Service) RevokeUser(
 		)
 	}
 
-	return s.accesscontrolService.RevokeUser(
+	return s.coreACService.RevokeUser(
 		userID,
 	)
 }

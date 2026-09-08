@@ -1,9 +1,7 @@
 package sourceoftruth
 
 import (
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/permission"
-
+	coreApp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/entity"
@@ -23,26 +21,23 @@ type Model struct {
 
 	Cursor int
 
-	appDeps           *app.Deps
-	authService       *auth.Service
-	permissionService *permission.Service
-
+	appDeps   *app.Deps
 	masterKey string
+
+	coreServices *coreApp.Services
 }
 
 func New(
 	appDeps *app.Deps,
 	SoTService *sourceoftruth.Service,
-	authService *auth.Service,
-	permissionService *permission.Service,
+	coreServices *coreApp.Services,
 ) Model {
 	return Model{
-		appDeps:           appDeps,
-		authService:       authService,
-		permissionService: permissionService,
-		SoTService:        SoTService,
-		Cursor:            0,
-		Form:              form.Model{},
+		appDeps:      appDeps,
+		SoTService:   SoTService,
+		coreServices: coreServices,
+		Cursor:       0,
+		Form:         form.Model{},
 	}
 }
 

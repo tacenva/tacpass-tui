@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/database"
-	"github.com/tacenva/tacpass-core/entity"
+	coreapp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-tui/internal/api"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/config"
@@ -24,27 +23,21 @@ func main() {
 
 	tacenvaDB := database.New(cfg.BaseDir)
 
-	appDBFilename := cfg.Path(config.AppDBFileName)
-	if err != nil {
-		return
-	}
-	sqliteDB, err := gorm.Open(
-		sqlite.Open(appDBFilename),
-		&gorm.Config{},
+	sqliteDB, err := OpenSQLite(
+		cfg.Path(config.AppDBFileName),
 	)
 	if err != nil {
-		fmt.Println("failed to open sqlite:", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
-	if err := sqliteDB.AutoMigrate(
-		&entity.User{},
-		&entity.Permission{},
-		&entity.Vault{},
-		&entity.VaultAccess{},
-	); err != nil {
-		fmt.Println("failed to migrate database:", err)
-		os.Exit(1)
+	sqlDB, err := sqliteDB.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqlDB.Close()
+
+	if err := coreapp.Migrate(sqliteDB); err != nil {
+		log.Fatal(err)
 	}
 
 	client := api.NewClient()
@@ -56,13 +49,31 @@ func main() {
 		Client:   client,
 	}
 
+	services := coreapp.NewServices(sqliteDB, tacenvaDB)
+
 	p := tea.NewProgram(
-		tui.New(&appDeps),
+		tui.New(&appDeps, services),
 		tea.WithAltScreen(),
 	)
 
 	if _, err := p.Run(); err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
+}
+
+func OpenSQLite(
+	path string,
+) (*gorm.DB, error) {
+	db, err := gorm.Open(
+		sqlite.Open(path),
+		&gorm.Config{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"open sqlite database: %w",
+			err,
+		)
+	}
+
+	return db, nil
 }

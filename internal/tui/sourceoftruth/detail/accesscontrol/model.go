@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
@@ -65,10 +66,12 @@ type Model struct {
 func New(
 	appDeps *app.Deps,
 	context *app.Context,
+	coreACService *coreAC.Service,
 ) Model {
 	service := accesscontrol.NewService(
 		appDeps,
 		context,
+		coreACService,
 	)
 
 	return Model{
