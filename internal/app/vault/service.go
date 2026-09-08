@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/tacenva/database"
@@ -44,72 +42,19 @@ func NewService(
 	}
 }
 
-func debugVault(
-	format string,
-	args ...any,
-) {
-	file, err := os.OpenFile(
-		"debug.log",
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0644,
-	)
-	if err != nil {
-		return
-	}
-
-	defer file.Close()
-
-	fmt.Fprintf(
-		file,
-		format,
-		args...,
-	)
-
-	fmt.Fprintln(file)
-}
-
 func (s *Service) List() ([]entity.VaultAccess, error) {
-	debugVault("=== List Vault ===")
-
 	if s.context == nil {
-		debugVault("Context is nil")
 		return nil, errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
-		debugVault("SelectedSoT is nil")
 		return nil, errors.New("selected source of truth is nil")
 	}
-
-	debugVault(
-		"SoT ID: %s",
-		s.context.SelectedSoT.ID,
-	)
-
-	debugVault(
-		"SoT Address: %s",
-		s.context.SelectedSoT.Address,
-	)
-
-	debugVault(
-		"MasterKey exists: %t",
-		s.masterKey != "",
-	)
-
-	debugVault(
-		"Token exists: %t",
-		s.appDeps.Client.Token != "",
-	)
 
 	vaultPath := s.appDeps.Config.Path(
 		config.NodeDirName,
 		s.context.SelectedSoT.ID,
 		"vault",
-	)
-
-	debugVault(
-		"Vault path: %s",
-		vaultPath,
 	)
 
 	db := database.New(
@@ -121,11 +66,6 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 		s.masterKey,
 	)
 	if err != nil {
-		debugVault(
-			"db.File error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -135,24 +75,10 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 		&vaultAccessList,
 	)
 	if err != nil {
-		debugVault(
-			"FindAll error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
-	debugVault(
-		"Local vault count: %d",
-		len(vaultAccessList),
-	)
-
 	if s.context.IsRemote {
-		debugVault(
-			"No local vault data, syncing from daemon",
-		)
-
 		outOfSync, err := s.OutOfSync()
 		if err != nil {
 			return nil, err
@@ -173,11 +99,6 @@ func (s *Service) OutOfSync() (bool, error) {
 		"vault",
 	)
 
-	debugVault(
-		"Vault path: %s",
-		vaultPath,
-	)
-
 	db := database.New(
 		vaultPath,
 	)
@@ -186,21 +107,11 @@ func (s *Service) OutOfSync() (bool, error) {
 		"vault",
 	)
 	if err != nil {
-		debugVault(
-			"db.RawFile error: %v",
-			err,
-		)
-
 		return false, err
 	}
 
 	hashVal, err := vaultFile.Hash()
 	if err != nil {
-		debugVault(
-			"vaultFile.Hash error: %v",
-			err,
-		)
-
 		return false, err
 	}
 
@@ -219,11 +130,6 @@ func (s *Service) OutOfSync() (bool, error) {
 		&result,
 	)
 	if err != nil {
-		debugVault(
-			"client.OutOfSync error: %v",
-			err,
-		)
-
 		return false, err
 	}
 
@@ -231,8 +137,6 @@ func (s *Service) OutOfSync() (bool, error) {
 }
 
 func (s *Service) Sync() ([]entity.VaultAccess, error) {
-	debugVault("=== Sync Vault ===")
-
 	var vaultAccessList []entity.VaultAccess
 
 	err := s.appDeps.Client.ListVaults(
@@ -240,18 +144,8 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 		&vaultAccessList,
 	)
 	if err != nil {
-		debugVault(
-			"ListVaults error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Remote vault count: %d",
-		len(vaultAccessList),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -266,11 +160,6 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 		s.masterKey,
 	)
 	if err != nil {
-		debugVault(
-			"db.File error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -291,17 +180,8 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 		vaultAccessPointers,
 	)
 	if err != nil {
-		debugVault(
-			"UpdateOrCreateBulk error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Sync success",
-	)
 
 	return vaultAccessList, nil
 }
@@ -309,10 +189,6 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 func (s *Service) createVaultRemotely(
 	vaultName string,
 ) (*entity.VaultAccess, error) {
-	debugVault(
-		"=== Create Vault Remote ===",
-	)
-
 	var vaultAccess entity.VaultAccess
 
 	body := struct {
@@ -327,18 +203,8 @@ func (s *Service) createVaultRemotely(
 		&vaultAccess,
 	)
 	if err != nil {
-		debugVault(
-			"CreateVault remote error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"CreateVault remote success | vaultID=%s",
-		vaultAccess.VaultID,
-	)
 
 	return &vaultAccess, nil
 }
@@ -346,10 +212,6 @@ func (s *Service) createVaultRemotely(
 func (s *Service) CreateVault(
 	vaultName string,
 ) (*entity.VaultAccess, error) {
-	debugVault(
-		"=== Create Vault ===",
-	)
-
 	var (
 		vaultAccess *entity.VaultAccess
 		err         error
@@ -367,11 +229,6 @@ func (s *Service) CreateVault(
 			s.context.SelectedSoT.AuthToken,
 		)
 		if err != nil {
-			debugVault(
-				"GetUserData error: %v",
-				err,
-			)
-
 			return nil, err
 		}
 
@@ -380,11 +237,6 @@ func (s *Service) CreateVault(
 			vaultName,
 		)
 		if err != nil {
-			debugVault(
-				"Create local vault error: %v",
-				err,
-			)
-
 			return nil, err
 		}
 	}
@@ -412,19 +264,12 @@ func (s *Service) CreateVault(
 		return nil, err
 	}
 
-	debugVault(
-		"CreateVault success | vaultID=%s",
-		vaultAccess.VaultID,
-	)
-
 	return vaultAccess, nil
 }
 
 func (s *Service) ListRecords(
 	vaultAccess *entity.VaultAccess,
 ) ([]entity.VaultRecord, error) {
-	debugVault("=== List Records ===")
-
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -449,16 +294,6 @@ func (s *Service) ListRecords(
 		)
 	}
 
-	debugVault(
-		"VaultID: %s",
-		vaultAccess.VaultID,
-	)
-
-	debugVault(
-		"SoT Address: %s",
-		s.context.SelectedSoT.Address,
-	)
-
 	if s.context.SelectedSoT.Address == "localhost" {
 		return s.listRecordsLocally(
 			vaultAccess,
@@ -473,29 +308,12 @@ func (s *Service) ListRecords(
 func (s *Service) listRecordsLocally(
 	vaultAccess *entity.VaultAccess,
 ) ([]entity.VaultRecord, error) {
-	debugVault(
-		"=== List Records Local ===",
-	)
-
-	// IMPORTANT:
-	// Local database.File() menggunakan vault key encoded
-	// sebagai password. Jangan Base64 Decode di sini.
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Open VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"VaultKey opened successfully | length=%d",
-		len(vaultKey),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -510,11 +328,6 @@ func (s *Service) listRecordsLocally(
 		string(vaultKey),
 	)
 	if err != nil {
-		debugVault(
-			"db.File error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -524,18 +337,8 @@ func (s *Service) listRecordsLocally(
 		&records,
 	)
 	if err != nil {
-		debugVault(
-			"FindAll records error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Local records count: %d",
-		len(records),
-	)
 
 	return records, nil
 }
@@ -543,10 +346,6 @@ func (s *Service) listRecordsLocally(
 func (s *Service) listRecordsRemotely(
 	vaultAccess *entity.VaultAccess,
 ) ([]entity.VaultRecord, error) {
-	debugVault(
-		"=== List Records Remote ===",
-	)
-
 	var encryptedRecords map[string][]byte
 
 	err := s.appDeps.Client.ListRecords(
@@ -555,55 +354,22 @@ func (s *Service) listRecordsRemotely(
 		&encryptedRecords,
 	)
 	if err != nil {
-		debugVault(
-			"ListRecords API error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
-	debugVault(
-		"Encrypted records count: %d",
-		len(encryptedRecords),
-	)
-
-	// HPKE Open menghasilkan encoded vault key 43 karakter.
 	vaultKeyEncoded, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Open VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
-	debugVault(
-		"VaultKey opened | encoded length=%d",
-		len(vaultKeyEncoded),
-	)
-
-	// Remote record menggunakan AES langsung,
-	// sehingga kita butuh raw 32-byte key.
 	vaultKey, err := base64.RawURLEncoding.DecodeString(
 		string(vaultKeyEncoded),
 	)
 	if err != nil {
-		debugVault(
-			"Decode VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"VaultKey decoded | raw length=%d",
-		len(vaultKey),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -620,32 +386,13 @@ func (s *Service) listRecordsRemotely(
 	)
 
 	for recordID, encryptedData := range encryptedRecords {
-		debugVault(
-			"Decrypt record | recordID=%s | encrypted length=%d | key length=%d",
-			recordID,
-			len(encryptedData),
-			len(vaultKey),
-		)
-
 		decrypted, err := db.Decrypt(
 			string(encryptedData),
 			vaultKey,
 		)
 		if err != nil {
-			debugVault(
-				"Decrypt error | recordID=%s | error=%v",
-				recordID,
-				err,
-			)
-
 			return nil, err
 		}
-
-		debugVault(
-			"Decrypt success | recordID=%s | decrypted length=%d",
-			recordID,
-			len(decrypted),
-		)
 
 		var record entity.VaultRecord
 
@@ -654,12 +401,6 @@ func (s *Service) listRecordsRemotely(
 			&record,
 		)
 		if err != nil {
-			debugVault(
-				"Unmarshal error | recordID=%s | error=%v",
-				recordID,
-				err,
-			)
-
 			return nil, err
 		}
 
@@ -671,11 +412,6 @@ func (s *Service) listRecordsRemotely(
 		)
 	}
 
-	debugVault(
-		"Remote records loaded: %d",
-		len(records),
-	)
-
 	return records, nil
 }
 
@@ -683,8 +419,6 @@ func (s *Service) AppendRecord(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault("=== Append Record ===")
-
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -715,12 +449,6 @@ func (s *Service) AppendRecord(
 		)
 	}
 
-	debugVault(
-		"VaultID: %s | RecordID: %s",
-		vaultAccess.VaultID,
-		record.ID,
-	)
-
 	if s.context.SelectedSoT.Address == "localhost" {
 		return s.appendRecordLocally(
 			vaultAccess,
@@ -738,27 +466,12 @@ func (s *Service) appendRecordLocally(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault(
-		"=== Append Record Local ===",
-	)
-
-	// Local memakai encoded key sebagai password.
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Open VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"VaultKey opened | length=%d",
-		len(vaultKey),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -773,11 +486,6 @@ func (s *Service) appendRecordLocally(
 		string(vaultKey),
 	)
 	if err != nil {
-		debugVault(
-			"db.File error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -785,17 +493,8 @@ func (s *Service) appendRecordLocally(
 		record,
 	)
 	if err != nil {
-		debugVault(
-			"Insert record error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Local record inserted",
-	)
 
 	return record, nil
 }
@@ -804,10 +503,6 @@ func (s *Service) appendRecordRemotely(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault(
-		"=== Append Record Remote ===",
-	)
-
 	raw, err := s.EncryptRecord(
 		vaultAccess,
 		record,
@@ -816,22 +511,12 @@ func (s *Service) appendRecordRemotely(
 		return nil, err
 	}
 
-	debugVault(
-		"Encrypted record length: %d",
-		len(raw),
-	)
-
 	recordID, err := s.appDeps.Client.CreateRecordRaw(
 		s.context.SelectedSoT.Address,
 		vaultAccess.VaultID,
 		raw,
 	)
 	if err != nil {
-		debugVault(
-			"CreateRecordRaw error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -841,11 +526,6 @@ func (s *Service) appendRecordRemotely(
 
 	record.ID = recordID
 
-	debugVault(
-		"Remote record created | recordID=%s",
-		record.ID,
-	)
-
 	return record, nil
 }
 
@@ -853,8 +533,6 @@ func (s *Service) UpdateRecord(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault("=== Update Record ===")
-
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -891,12 +569,6 @@ func (s *Service) UpdateRecord(
 		)
 	}
 
-	debugVault(
-		"VaultID: %s | RecordID: %s",
-		vaultAccess.VaultID,
-		record.ID,
-	)
-
 	if s.context.SelectedSoT.Address == "localhost" {
 		return s.updateRecordLocally(
 			vaultAccess,
@@ -914,27 +586,12 @@ func (s *Service) updateRecordLocally(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault(
-		"=== Update Record Local ===",
-	)
-
-	// Local memakai encoded key sebagai password.
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Open VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"VaultKey opened | length=%d",
-		len(vaultKey),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -949,11 +606,6 @@ func (s *Service) updateRecordLocally(
 		string(vaultKey),
 	)
 	if err != nil {
-		debugVault(
-			"db.File error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
@@ -961,17 +613,8 @@ func (s *Service) updateRecordLocally(
 		record,
 	)
 	if err != nil {
-		debugVault(
-			"Update record error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Local record updated",
-	)
 
 	return record, nil
 }
@@ -980,10 +623,6 @@ func (s *Service) updateRecordRemotely(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) (*entity.VaultRecord, error) {
-	debugVault(
-		"=== Update Record Remote ===",
-	)
-
 	raw, err := s.EncryptRecord(
 		vaultAccess,
 		record,
@@ -992,11 +631,6 @@ func (s *Service) updateRecordRemotely(
 		return nil, err
 	}
 
-	debugVault(
-		"Encrypted record length: %d",
-		len(raw),
-	)
-
 	err = s.appDeps.Client.UpdateRecordRaw(
 		s.context.SelectedSoT.Address,
 		vaultAccess.VaultID,
@@ -1004,18 +638,8 @@ func (s *Service) updateRecordRemotely(
 		raw,
 	)
 	if err != nil {
-		debugVault(
-			"UpdateRecordRaw error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Remote record updated | recordID=%s",
-		record.ID,
-	)
 
 	return record, nil
 }
@@ -1024,10 +648,6 @@ func (s *Service) EncryptRecord(
 	vaultAccess *entity.VaultAccess,
 	record *entity.VaultRecord,
 ) ([]byte, error) {
-	debugVault(
-		"=== Encrypt Record ===",
-	)
-
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -1044,62 +664,22 @@ func (s *Service) EncryptRecord(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Open VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
 
-	debugVault(
-		"VaultKey opened | encoded length=%d",
-		len(vaultKeyEncoded),
-	)
-
-	// credential.Generate(32) menghasilkan:
-	//
-	// 32 raw bytes
-	//        ↓
-	// Base64 Raw URL
-	//        ↓
-	// 43 characters
-	//
-	// db.Encrypt() membutuhkan raw AES key,
-	// jadi decode kembali ke 32 bytes.
 	vaultKey, err := base64.RawURLEncoding.DecodeString(
 		string(vaultKeyEncoded),
 	)
 	if err != nil {
-		debugVault(
-			"Decode VaultKey error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"VaultKey decoded | raw length=%d",
-		len(vaultKey),
-	)
 
 	raw, err := json.Marshal(
 		record,
 	)
 	if err != nil {
-		debugVault(
-			"Marshal record error: %v",
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Record marshaled | length=%d",
-		len(raw),
-	)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -1114,19 +694,8 @@ func (s *Service) EncryptRecord(
 		vaultKey,
 	)
 	if err != nil {
-		debugVault(
-			"Encrypt error | key length=%d | error=%v",
-			len(vaultKey),
-			err,
-		)
-
 		return nil, err
 	}
-
-	debugVault(
-		"Encrypt success | encrypted length=%d",
-		len(encrypted),
-	)
 
 	return []byte(encrypted), nil
 }
