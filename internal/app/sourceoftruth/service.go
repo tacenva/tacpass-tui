@@ -88,8 +88,9 @@ func (s *Service) Access(
 			return err
 		}
 
-		sotULID, err := s.sotFile.Insert(
+		_, err = s.sotFile.Insert(
 			&entity.SourceOfTruth{
+				ID:        s.appDeps.Config.SoTULID,
 				Hostname:  hostname,
 				Address:   "localhost",
 				AuthToken: token,
@@ -100,9 +101,9 @@ func (s *Service) Access(
 			return err
 		}
 
-		if err := s.appDeps.Config.SetSoTULID(sotULID); err != nil {
-			return err
-		}
+		// if err := s.appDeps.Config.SetSoTULID(sotULID); err != nil {
+		// 	return err
+		// }
 	}
 
 	return nil
