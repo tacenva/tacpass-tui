@@ -86,6 +86,12 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) viewEdit(title string) string {
+	expiredAt := m.EditExpiredAt
+
+	if expiredAt == "" {
+		expiredAt = "YYYY-MM-DD"
+	}
+
 	rows := []string{
 		styles.Title.Render(title),
 		"",
@@ -109,7 +115,7 @@ func (m Model) viewEdit(title string) string {
 		"",
 		components.FormField(
 			"Expired At",
-			m.EditExpiredAt,
+			expiredAt,
 			m.EditField == FieldExpiredAt,
 		),
 	}
@@ -140,14 +146,7 @@ func (m Model) Navigation() string {
 	if m.Focus == FocusEdit || m.Focus == FocusNew {
 		content = components.FormNavigation(m.Width, "Ctrl+S")
 	} else {
-		content = styles.NavigationItems(
-			m.Width,
-			styles.Key("↑↓", "Navigate"),
-			styles.Key("↵", "Edit"),
-			styles.Key("p", "Show Password"),
-			styles.Key("Esc", "Back"),
-			styles.Key("q", "Quit"),
-		)
+		content = components.CrudNavigation(m.Width, true)
 	}
 
 	return styles.Navigation.

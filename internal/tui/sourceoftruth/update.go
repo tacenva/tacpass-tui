@@ -100,12 +100,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "esc", "q", "ctrl+c":
 			return m, tea.Quit
 
-		case "up", "k":
+		case "up":
 			if m.Cursor > 0 {
 				m.Cursor--
 			}
 
-		case "down", "j":
+		case "down":
 			maxCursor := len(m.SoTList)
 
 			if m.Cursor < maxCursor {

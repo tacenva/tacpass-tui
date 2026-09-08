@@ -94,7 +94,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "up", "k":
+	case "up":
 		if m.SidebarCursor > 0 {
 			m.SidebarCursor--
 		}
@@ -103,7 +103,7 @@ func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, m.accessControlTUI.Load()
 		}
 
-	case "down", "j":
+	case "down":
 		if m.SidebarCursor < 2 {
 			m.SidebarCursor++
 		}
@@ -112,7 +112,7 @@ func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, m.accessControlTUI.Load()
 		}
 
-	case "enter", "right", "l":
+	case "enter":
 		m.Focus = FocusContent
 
 		switch m.SidebarCursor {

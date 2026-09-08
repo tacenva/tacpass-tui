@@ -11,7 +11,7 @@ func FormField(
 	value string,
 	selected bool,
 ) string {
-	prefix := "  "
+	prefix := ""
 
 	if selected {
 		prefix = "> "
@@ -22,18 +22,20 @@ func FormField(
 	)
 
 	valueView := styles.Normal.Render(
-		"    " + value,
+		value,
 	)
 
 	if selected {
 		valueView = styles.Selected.Render(
-			"    " + value + "_",
+			value + "_",
 		)
 	}
 
-	return lipgloss.JoinVertical(
+	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		labelView,
+		lipgloss.NewStyle().
+			Width(16).
+			Render(labelView),
 		valueView,
 	)
 }

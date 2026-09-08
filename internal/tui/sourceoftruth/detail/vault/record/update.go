@@ -31,36 +31,35 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 	newCredentialCursor := len(m.Records)
 
 	switch msg.String() {
-	case "up", "k":
+	case "up":
 		if m.Cursor > 0 {
 			m.Cursor--
 			m.ShowPassword = false
 		}
 
-	case "down", "j":
+	case "down":
 		if m.Cursor < newCredentialCursor {
 			m.Cursor++
 			m.ShowPassword = false
 		}
 
 	case "enter":
+		if m.Selected() != nil {
+			m.ShowPassword = !m.ShowPassword
+			return m, nil
+		}
+
 		if m.Cursor == newCredentialCursor {
 			m.startNew()
 			return m, nil
 		}
 
+	case "e":
 		m.startEdit()
 
-	case "p":
-		if m.Selected() != nil {
-			m.ShowPassword = !m.ShowPassword
-		}
-
-	case "esc", "left", "h":
+	case "esc":
 		m.ShowPassword = false
 		m.Focus = Unfocus
-
-		// case "q":
 		m.Active = false
 	}
 
@@ -173,7 +172,7 @@ func (m *Model) appendEditCharacter(value string) {
 		m.EditPassword += value
 
 	case FieldExpiredAt:
-		m.EditExpiredAt += value
+		m.updateExpiredAt(value)
 	}
 }
 
@@ -196,8 +195,42 @@ func (m *Model) removeEditCharacter() {
 		}
 
 	case FieldExpiredAt:
-		if len(m.EditExpiredAt) > 0 {
-			m.EditExpiredAt = m.EditExpiredAt[:len(m.EditExpiredAt)-1]
+		m.backspaceExpiredAt()
+	}
+}
+
+func (m *Model) updateExpiredAt(input string) {
+	if len(m.EditExpiredAt) >= 10 {
+		return
+	}
+
+	for _, char := range input {
+		if char < '0' || char > '9' {
+			continue
 		}
+
+		if len(m.EditExpiredAt) == 4 ||
+			len(m.EditExpiredAt) == 7 {
+			m.EditExpiredAt += "-"
+		}
+
+		if len(m.EditExpiredAt) >= 10 {
+			return
+		}
+
+		m.EditExpiredAt += string(char)
+	}
+}
+
+func (m *Model) backspaceExpiredAt() {
+	if len(m.EditExpiredAt) == 0 {
+		return
+	}
+
+	m.EditExpiredAt = m.EditExpiredAt[:len(m.EditExpiredAt)-1]
+
+	if len(m.EditExpiredAt) == 5 ||
+		len(m.EditExpiredAt) == 8 {
+		m.EditExpiredAt = m.EditExpiredAt[:len(m.EditExpiredAt)-1]
 	}
 }

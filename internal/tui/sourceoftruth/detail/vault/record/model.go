@@ -113,9 +113,11 @@ func (m *Model) startEdit() {
 	m.EditPassword = record.Password
 	m.EditExpiredAt = ""
 
-	// if !record.ExpiredAt.IsZero() {
-	// 	m.EditExpiredAt = record.ExpiredAt.Format("2006-01-02 15:04")
-	// }
+	if !record.ExpiredAt.IsZero() {
+		m.EditExpiredAt = record.ExpiredAt.Format(
+			"2006-01-02",
+		)
+	}
 
 	m.ShowPassword = false
 	m.Focus = FocusEdit
@@ -149,21 +151,28 @@ func (m *Model) saveEdit() {
 		return
 	}
 
+	expiredAt, err := parseExpiredAt(
+		m.EditExpiredAt,
+	)
+	if err != nil {
+		return
+	}
+
 	record.Name = m.EditName
 	record.Endpoint = m.EditEndpoint
 	record.Password = m.EditPassword
+	record.ExpiredAt = expiredAt
 
-	// if expiredAt, err := parseExpiredAt(m.EditExpiredAt); err == nil {
-	// 	record.ExpiredAt = expiredAt
-	// }
-
-	_, err := m.VaultServiceTUI.UpdateRecord(
+	_, err = m.VaultServiceTUI.UpdateRecord(
 		m.SelectedVaultAccess,
 		record,
 	)
 	if err != nil {
 		panic(err)
 	}
+
+	// Update local record supaya UI langsung berubah.
+	m.Records[m.Cursor] = *record
 
 	m.clearForm()
 	m.Focus = FocusContent
@@ -174,16 +183,18 @@ func (m *Model) saveNew() {
 		return
 	}
 
-	// expiredAt, err := parseExpiredAt(m.EditExpiredAt)
-	// if err != nil {
-	// 	return
-	// }
+	expiredAt, err := parseExpiredAt(
+		m.EditExpiredAt,
+	)
+	if err != nil {
+		return
+	}
 
 	record := entity.VaultRecord{
-		Name:     m.EditName,
-		Endpoint: m.EditEndpoint,
-		Password: m.EditPassword,
-		// ExpiredAt: expiredAt,
+		Name:      m.EditName,
+		Endpoint:  m.EditEndpoint,
+		Password:  m.EditPassword,
+		ExpiredAt: expiredAt,
 	}
 
 	newRecord, err := m.VaultServiceTUI.AppendRecord(
@@ -219,7 +230,7 @@ func parseExpiredAt(value string) (time.Time, error) {
 	}
 
 	return time.Parse(
-		"2006-01-02 15:04",
+		"2006-01-02",
 		value,
 	)
 }
