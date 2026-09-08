@@ -1,6 +1,8 @@
 package accesscontrol
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/tacenva/tacpass-tui/internal/styles"
@@ -8,6 +10,10 @@ import (
 )
 
 func (m Model) View() string {
+	if m.Focus == FocusForm {
+		return m.viewForm()
+	}
+
 	return m.viewContent()
 }
 
@@ -63,13 +69,78 @@ func (m Model) viewContent() string {
 		)
 }
 
-func (m Model) BreadcrumbItems() []string {
-	return []string{
-		"Access Control",
+func (m Model) viewForm() string {
+	title := "New Access Control"
+
+	if m.FormMode == FormUpdate {
+		title = "Update Access Control"
 	}
+
+	name := m.formName()
+
+	if name == "" {
+		name = "Enter access control name"
+	}
+
+	privilege := string(m.FormPrivilege)
+
+	form := lipgloss.JoinVertical(
+		lipgloss.Left,
+
+		styles.Normal.Render(title),
+
+		"",
+
+		components.FormField(
+			"Name",
+			name,
+			m.FormCursor == 0,
+		),
+
+		"",
+
+		components.FormField(
+			"Privilege",
+			privilege,
+			m.FormCursor == 1,
+		),
+
+		"",
+		styles.Muted.Render(
+			fmt.Sprintf(
+				"Use ←→ to change privilege",
+			),
+		),
+	)
+
+	return lipgloss.NewStyle().
+		PaddingLeft(4).
+		Render(form)
+}
+
+func (m Model) BreadcrumbItems() []string {
+	items := []string{"Access Control"}
+
+	if m.Focus == FocusForm {
+		switch m.FormMode {
+		case FormNew:
+			items = append(items, "New")
+		case FormUpdate:
+			items = append(items, "Update")
+		}
+	}
+
+	return items
 }
 
 func (m Model) Navigation() string {
+	if m.Focus == FocusForm {
+		return components.FormNavigation(
+			m.Width,
+			"↵",
+		)
+	}
+
 	return styles.NavigationItems(
 		m.Width,
 		styles.Key("↑↓", "Navigate"),

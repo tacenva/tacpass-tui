@@ -111,6 +111,25 @@ func (s *Service) Create(
 	)
 }
 
+func (s *Service) ChangeName(
+	id string,
+	name string,
+) error {
+	if s.context.IsRemote {
+		if s.context.SelectedSoT == nil {
+			return fmt.Errorf("selected source of truth is nil")
+		}
+
+		return s.appDeps.Client.ChangeAccessControlName(
+			s.context.SelectedSoT.Address,
+			id,
+			name,
+		)
+	}
+
+	return s.accesscontrolService.ChangeName(id, name)
+}
+
 func (s *Service) ChangePrivilege(
 	id string,
 	privilege entity.Privilege,

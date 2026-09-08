@@ -99,6 +99,40 @@ func (c *Client) CreateAccessControl(
 	return &response, nil
 }
 
+func (c *Client) ChangeAccessControlName(
+	address string,
+	id string,
+	name string,
+) error {
+	id = strings.TrimSpace(id)
+	name = strings.TrimSpace(name)
+
+	if id == "" {
+		return fmt.Errorf("access control id is required")
+	}
+
+	if name == "" {
+		return fmt.Errorf("access control name is required")
+	}
+
+	request := struct {
+		Name string `json:"name"`
+	}{
+		Name: name,
+	}
+
+	if err := c.Patch(
+		address,
+		"/access-control/"+url.PathEscape(id)+"/name",
+		request,
+		nil,
+	); err != nil {
+		return fmt.Errorf("change access control name: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Client) ChangeAccessControlPrivilege(
 	address string,
 	id string,
