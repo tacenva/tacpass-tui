@@ -30,7 +30,8 @@ func (m Model) viewSidebar() string {
 	for i, item := range items {
 		prefix := "  "
 
-		if i == m.SidebarCursor && m.Focus == FocusSidebar {
+		if i == m.SidebarCursor &&
+			m.Focus == FocusSidebar {
 			prefix = "> "
 		}
 
@@ -55,12 +56,11 @@ func (m Model) viewSidebar() string {
 
 func (m Model) viewContent() string {
 	switch m.SidebarCursor {
-
 	case 0:
 		return m.vaultTUI.View()
 
 	case 1:
-		// return m.accessControlTUI.View()
+		return m.accessControlTUI.View()
 
 	case 2:
 		return styles.Muted.Render("Setting")
@@ -73,22 +73,29 @@ func (m Model) Breadcrumb() []string {
 	breadcrumbItems := []string{
 		"Detail",
 	}
-	if m.Focus == FocusContent {
-		switch m.SidebarCursor {
-		case 0:
-			items := m.vaultTUI.BreadcrumbItems()
 
-			breadcrumbItems = append(
-				breadcrumbItems,
-				items...,
-			)
+	if m.Focus != FocusContent {
+		return breadcrumbItems
+	}
 
-		case 1:
-			// ...
+	switch m.SidebarCursor {
+	case 0:
+		breadcrumbItems = append(
+			breadcrumbItems,
+			m.vaultTUI.BreadcrumbItems()...,
+		)
 
-		case 2:
-			// ...
-		}
+	case 1:
+		breadcrumbItems = append(
+			breadcrumbItems,
+			m.accessControlTUI.BreadcrumbItems()...,
+		)
+
+	case 2:
+		breadcrumbItems = append(
+			breadcrumbItems,
+			"Setting",
+		)
 	}
 
 	return breadcrumbItems
@@ -110,13 +117,7 @@ func (m Model) Navigation() string {
 			content = m.vaultTUI.Navigation()
 
 		case 1:
-			content = styles.NavigationItems(
-				m.Width,
-				styles.Key("↑↓", "Navigate"),
-				styles.Key("↵", "Select"),
-				styles.Key("Esc", "Back"),
-				styles.Key("q", "Quit"),
-			)
+			content = m.accessControlTUI.Navigation()
 
 		case 2:
 			content = styles.NavigationItems(

@@ -2,6 +2,8 @@ package detail
 
 import (
 	"github.com/tacenva/tacpass-tui/internal/app"
+
+	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 )
 
@@ -25,7 +27,8 @@ type Model struct {
 
 	context *app.Context
 
-	vaultTUI vaultTUI.Model
+	vaultTUI         vaultTUI.Model
+	accessControlTUI accessControlTUI.Model
 }
 
 func New(
@@ -41,6 +44,11 @@ func New(
 
 	v.Load()
 
+	a := accessControlTUI.New(
+		appDeps,
+		ctx,
+	)
+
 	return Model{
 		Active:        true,
 		SidebarCursor: 0,
@@ -48,6 +56,7 @@ func New(
 
 		context: ctx,
 
-		vaultTUI: v,
+		vaultTUI:         v,
+		accessControlTUI: a,
 	}
 }

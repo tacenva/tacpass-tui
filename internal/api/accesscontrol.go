@@ -40,7 +40,9 @@ func (c *Client) GetAccessControl(
 	id = strings.TrimSpace(id)
 
 	if id == "" {
-		return nil, fmt.Errorf("access control id is required")
+		return nil, fmt.Errorf(
+			"access control id is required",
+		)
 	}
 
 	var permission entity.Permission
@@ -61,11 +63,22 @@ func (c *Client) GetAccessControl(
 
 func (c *Client) CreateAccessControl(
 	address string,
+	name string,
 	privilege entity.Privilege,
 ) (*AccessControlCreateResponse, error) {
+	name = strings.TrimSpace(name)
+
+	if name == "" {
+		return nil, fmt.Errorf(
+			"access control name is required",
+		)
+	}
+
 	request := struct {
+		Name      string           `json:"name"`
 		Privilege entity.Privilege `json:"privilege"`
 	}{
+		Name:      name,
 		Privilege: privilege,
 	}
 
@@ -94,7 +107,9 @@ func (c *Client) ChangeAccessControlPrivilege(
 	id = strings.TrimSpace(id)
 
 	if id == "" {
-		return fmt.Errorf("access control id is required")
+		return fmt.Errorf(
+			"access control id is required",
+		)
 	}
 
 	request := struct {
@@ -125,7 +140,9 @@ func (c *Client) RevokeAccessControl(
 	id = strings.TrimSpace(id)
 
 	if id == "" {
-		return fmt.Errorf("access control id is required")
+		return fmt.Errorf(
+			"access control id is required",
+		)
 	}
 
 	if err := c.Delete(
