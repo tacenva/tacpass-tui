@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -32,16 +34,31 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
+		fmt.Printf(
+			"cursor=%d len=%d\n",
+			m.Cursor,
+			len(m.VaultAccessList),
+		)
 		if m.Cursor > 0 {
 			m.Cursor--
 		}
 
 	case "down", "j":
+		fmt.Printf(
+			"cursor=%d len=%d\n",
+			m.Cursor,
+			len(m.VaultAccessList),
+		)
 		if m.Cursor < len(m.VaultAccessList) {
 			m.Cursor++
 		}
 
 	case "enter":
+		fmt.Printf(
+			"cursor=%d len=%d\n",
+			m.Cursor,
+			len(m.VaultAccessList),
+		)
 		if m.Cursor == len(m.VaultAccessList) {
 			m.Focus = FocusNewVault
 			m.VaultName = ""

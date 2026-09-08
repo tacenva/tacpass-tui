@@ -6,6 +6,8 @@ import (
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
+	coreEntity "github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/permission"
 	"github.com/tacenva/tacpass-core/util/keyring"
 	"github.com/tacenva/tacpass-tui/internal/api"
 	"github.com/tacenva/tacpass-tui/internal/app"
@@ -17,48 +19,90 @@ var (
 )
 
 type Service struct {
-	appDeps     *app.Deps
-	sotFile     *database.DatabaseFile
-	authService *auth.Service
+	appDeps           *app.Deps
+	sotFile           *database.DatabaseFile
+	authService       *auth.Service
+	permissionService *permission.Service
 }
 
-func NewService(appDeps *app.Deps, authService *auth.Service) *Service {
+func NewService(
+	appDeps *app.Deps,
+	authService *auth.Service,
+	permissionService *permission.Service,
+) *Service {
 	return &Service{
-		appDeps:     appDeps,
-		authService: authService,
+		appDeps:           appDeps,
+		authService:       authService,
+		permissionService: permissionService,
 	}
 }
 
-func (s *Service) Access(masterPassword string) error {
-	sotFile, err := s.appDeps.AppDB.File("source-of-truth", masterPassword)
+func (s *Service) Initialize(
+	name string,
+	hostname string,
+) (string, *keyring.KeyPair, error) {
+	_, keyPair, err := s.permissionService.Create(
+		name,
+		coreEntity.PrivilegeAdmin,
+	)
+	if err != nil {
+		return "", nil, err
+	}
+
+	token, err := s.authService.RequestEnrollment(
+		hostname,
+		keyPair.PublicKey,
+		coreEntity.UserStatusApproved,
+	)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return token, keyPair, nil
+}
+
+func (s *Service) Access(
+	masterPassword string,
+) error {
+	sotFile, err := s.appDeps.AppDB.File(
+		"source-of-truth",
+		masterPassword,
+	)
 	if err != nil {
 		return err
 	}
 
 	s.sotFile = sotFile
+
 	if s.sotFile.Count() == 0 {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
 
-		token, keypair, err := s.authService.Initialize(hostname)
-
+		token, keyPair, err := s.Initialize(
+			string(coreEntity.PrivilegeAdmin),
+			hostname,
+		)
 		if err != nil {
 			return err
 		}
 
-		SoTULID, err := s.sotFile.Insert(&entity.SourceOfTruth{
-			Hostname:  hostname,
-			Address:   "localhost",
-			AuthToken: token,
-			KeyPair:   *keypair,
-		})
+		sotULID, err := s.sotFile.Insert(
+			&entity.SourceOfTruth{
+				Hostname:  hostname,
+				Address:   "localhost",
+				AuthToken: token,
+				KeyPair:   *keyPair,
+			},
+		)
 		if err != nil {
 			return err
 		}
 
-		s.appDeps.Config.SetSoTULID(SoTULID)
+		if err := s.appDeps.Config.SetSoTULID(sotULID); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -83,7 +127,6 @@ func (s *Service) Create(
 		address,
 		api.TLSConfig{
 			Fingerprint: "",
-
 			OnFirstTrust: func(
 				newFingerprint string,
 			) error {
@@ -104,40 +147,58 @@ func (s *Service) Create(
 		return "", err
 	}
 
-	return s.sotFile.Insert(&entity.SourceOfTruth{
-		Hostname:       hostname,
-		Address:        address,
-		AuthToken:      response.AuthToken,
-		KeyPair:        keypair,
-		TLSFingerprint: fingerprint,
-	})
+	return s.sotFile.Insert(
+		&entity.SourceOfTruth{
+			Hostname:       hostname,
+			Address:        address,
+			AuthToken:      response.AuthToken,
+			KeyPair:        keypair,
+			TLSFingerprint: fingerprint,
+		},
+	)
 }
 
-func (s *Service) Update(updatedSoT *entity.SourceOfTruth) error {
+func (s *Service) Update(
+	updatedSoT *entity.SourceOfTruth,
+) error {
 	if s.sotFile == nil {
 		return ErrForbidden
 	}
+
 	return s.sotFile.Update(updatedSoT)
 }
 
-func (s *Service) Get(id string) (*entity.SourceOfTruth, error) {
+func (s *Service) Get(
+	id string,
+) (*entity.SourceOfTruth, error) {
 	if s.sotFile == nil {
 		return nil, ErrForbidden
 	}
 
 	var sotData entity.SourceOfTruth
-	err := s.sotFile.Find(id, sotData)
+
+	err := s.sotFile.Find(
+		id,
+		&sotData,
+	)
 	if err != nil {
 		return nil, err
 	}
+
 	return &sotData, nil
 }
 
 func (s *Service) List() ([]entity.SourceOfTruth, error) {
+	if s.sotFile == nil {
+		return nil, ErrForbidden
+	}
+
 	var sotData []entity.SourceOfTruth
+
 	err := s.sotFile.FindAll(&sotData)
 	if err != nil {
 		return nil, err
 	}
+
 	return sotData, nil
 }

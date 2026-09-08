@@ -3,7 +3,6 @@ package detail
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 )
 
@@ -37,19 +36,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				return m, cmd
 
 			case 1:
-				updated, cmd := m.accessControlTUI.Update(msg)
+				// updated, cmd := m.accessControlTUI.Update(msg)
 
-				m.accessControlTUI = updated
+				// m.accessControlTUI = updated
 
-				if !m.accessControlTUI.Active ||
-					m.accessControlTUI.Focus == accessControlTUI.FocusNone {
-					m.accessControlTUI.Active = true
-					m.accessControlTUI.Focus = accessControlTUI.FocusContent
-					m.Focus = FocusSidebar
-					cmd = nil
-				}
+				// if !m.accessControlTUI.Active ||
+				// 	m.accessControlTUI.Focus == accessControlTUI.FocusNone {
+				// 	m.accessControlTUI.Active = true
+				// 	m.accessControlTUI.Focus = accessControlTUI.FocusContent
+				// 	m.Focus = FocusSidebar
+				// 	cmd = nil
+				// }
 
-				return m, cmd
+				// return m, cmd
 			}
 		}
 
@@ -74,19 +73,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			return m, cmd
 
 		case 1:
-			updated, cmd := m.accessControlTUI.Update(msg)
+			// updated, cmd := m.accessControlTUI.Update(msg)
 
-			m.accessControlTUI = updated
+			// m.accessControlTUI = updated
 
-			if !m.accessControlTUI.Active ||
-				m.accessControlTUI.Focus == accessControlTUI.FocusNone {
-				m.accessControlTUI.Active = true
-				m.accessControlTUI.Focus = accessControlTUI.FocusContent
-				m.Focus = FocusSidebar
-				cmd = nil
-			}
+			// if !m.accessControlTUI.Active ||
+			// 	m.accessControlTUI.Focus == accessControlTUI.FocusNone {
+			// 	m.accessControlTUI.Active = true
+			// 	m.accessControlTUI.Focus = accessControlTUI.FocusContent
+			// 	m.Focus = FocusSidebar
+			// 	cmd = nil
+			// }
 
-			return m, cmd
+			// return m, cmd
 		}
 	}
 
@@ -114,11 +113,11 @@ func (m Model) updateSidebar(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.vaultTUI.Focus = vaultTUI.FocusContent
 
 		case 1:
-			m.accessControlTUI.Active = true
-			m.accessControlTUI.Focus = accessControlTUI.FocusContent
+			// m.accessControlTUI.Active = true
+			// m.accessControlTUI.Focus = accessControlTUI.FocusContent
 
-			// Load access controls when entering the page.
-			return m, m.accessControlTUI.Init()
+			// // Load access controls when entering the page.
+			// return m, m.accessControlTUI.Init()
 
 		case 2:
 			// Setting nanti.

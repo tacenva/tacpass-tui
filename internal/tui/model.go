@@ -40,7 +40,7 @@ func New(
 	userService := user.NewService(userRepository)
 
 	authService := auth.NewService(userService, permissionService)
-	soTService := SoTService.NewService(deps, authService)
+	soTService := SoTService.NewService(deps, authService, permissionService)
 
 	return Model{
 		Screen:        ScreenLogin,

@@ -22,95 +22,66 @@ func (m Model) View() string {
 }
 
 func (m Model) viewContent() string {
-	var rows []string
-
-	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("12")).
-		Bold(true)
-
-	passwordStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("10"))
-
-	endpointStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("7"))
-
-	expiredStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("8"))
-
-	contentWidth := m.Width - 4
-	if contentWidth < 40 {
-		contentWidth = 40
-	}
+	var rows []components.TableRow
 
 	for i, record := range m.Records {
-		selected := i == m.Cursor
-
-		prefix := "  "
-		if selected {
-			prefix = "> "
-		}
-
 		password := "••••••••"
-		if selected && m.ShowPassword {
+
+		if m.ShowPassword &&
+			i == m.Cursor {
 			password = record.Password
 		}
 
-		nameWidth := lipgloss.Width(record.Name)
-		passwordWidth := lipgloss.Width(password)
+		endpoint := strings.TrimPrefix(
+			record.Endpoint,
+			"https://",
+		)
 
-		gap := contentWidth - nameWidth - passwordWidth
-		if gap < 2 {
-			gap = 2
-		}
-
-		header := prefix +
-			nameStyle.Render(record.Name) +
-			strings.Repeat(" ", gap) +
-			passwordStyle.Render(password)
-
-		endpoint := strings.TrimPrefix(record.Endpoint, "https://")
-		endpoint = strings.TrimPrefix(endpoint, "http://")
-
-		detail := "  " +
-			endpointStyle.Render(endpoint) +
-			"    " +
-			expiredStyle.Render(
-				"Exp: "+record.ExpiredAt.Format("02 Jan 2006"),
-			)
+		endpoint = strings.TrimPrefix(
+			endpoint,
+			"http://",
+		)
 
 		rows = append(
 			rows,
-			header,
-			detail,
-			"",
+			components.TableRow{
+				Values: []string{
+					record.Name,
+					password,
+					endpoint,
+					record.ExpiredAt.Format("02 Jan 2006"),
+				},
+			},
 		)
 	}
 
-	if len(m.Records) == 0 {
-		rows = append(
-			rows,
-			styles.Muted.Render("No credential found."),
-			"",
-		)
+	table := components.Table{
+		Columns: []components.TableColumn{
+			{
+				Title: "Name",
+				Width: 30,
+			},
+			{
+				Title: "Password",
+				Width: 25,
+			},
+			{
+				Title: "Endpoint",
+				Width: 40,
+			},
+			{
+				Title: "Expired",
+				Width: 20,
+			},
+		},
+		Rows:     rows,
+		Cursor:   m.Cursor,
+		AddLabel: "New Credential",
+		OnFocus:  true,
 	}
-
-	newCredential := "+ New Credential"
-
-	if m.Cursor == len(m.Records) {
-		newCredential = "> Add Credential"
-	}
-
-	rows = append(
-		rows,
-		"",
-		styles.Selected.Render(newCredential),
-	)
 
 	return styles.MainContent.Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			rows...,
-		),
+		table.View(),
 	)
 }
 

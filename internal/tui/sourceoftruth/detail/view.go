@@ -60,7 +60,7 @@ func (m Model) viewContent() string {
 		return m.vaultTUI.View()
 
 	case 1:
-		return m.accessControlTUI.View()
+		// return m.accessControlTUI.View()
 
 	case 2:
 		return styles.Muted.Render("Setting")

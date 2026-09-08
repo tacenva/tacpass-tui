@@ -39,7 +39,7 @@ func (m Model) View() string {
 	table := components.Table{
 		Columns: []components.TableColumn{
 			{
-				Title: "Vault",
+				Title: "Vault Name",
 				Width: 50,
 			},
 		},
