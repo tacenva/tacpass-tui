@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
+	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/util/keyring"
 
@@ -15,18 +16,31 @@ type Service struct {
 	context *app.Context
 
 	coreACService *coreAC.Service
+	authService   *auth.Service
 }
 
 func NewService(
 	appDeps *app.Deps,
 	context *app.Context,
 	coreACService *coreAC.Service,
+	authService *auth.Service,
 ) *Service {
 	return &Service{
 		appDeps:       appDeps,
 		context:       context,
 		coreACService: coreACService,
+		authService:   authService,
 	}
+}
+
+func (s *Service) authUser() (*entity.User, error) {
+	if s.context.SelectedSoT == nil {
+		return nil, fmt.Errorf("selected source of truth is nil")
+	}
+
+	return s.authService.GetUserData(
+		s.context.SelectedSoT.AuthToken,
+	)
 }
 
 func (s *Service) List() ([]entity.Permission, error) {
@@ -40,7 +54,12 @@ func (s *Service) List() ([]entity.Permission, error) {
 		)
 	}
 
-	return s.coreACService.List()
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.coreACService.List(authUser)
 }
 
 func (s *Service) Get(
@@ -57,7 +76,15 @@ func (s *Service) Get(
 		)
 	}
 
-	return s.coreACService.Get(id)
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.coreACService.Get(
+		authUser,
+		id,
+	)
 }
 
 func (s *Service) Create(
@@ -83,7 +110,13 @@ func (s *Service) Create(
 		return result.Permission, result.KeyPair, nil
 	}
 
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return s.coreACService.Create(
+		authUser,
 		name,
 		privilege,
 	)
@@ -105,7 +138,16 @@ func (s *Service) ChangeName(
 		)
 	}
 
-	return s.coreACService.ChangeName(id, name)
+	authUser, err := s.authUser()
+	if err != nil {
+		return err
+	}
+
+	return s.coreACService.ChangeName(
+		authUser,
+		id,
+		name,
+	)
 }
 
 func (s *Service) ChangePrivilege(
@@ -126,7 +168,13 @@ func (s *Service) ChangePrivilege(
 		)
 	}
 
+	authUser, err := s.authUser()
+	if err != nil {
+		return err
+	}
+
 	return s.coreACService.ChangePrivilege(
+		authUser,
 		id,
 		privilege,
 	)
@@ -148,7 +196,15 @@ func (s *Service) Revoke(
 		)
 	}
 
-	return s.coreACService.Revoke(id)
+	authUser, err := s.authUser()
+	if err != nil {
+		return err
+	}
+
+	return s.coreACService.Revoke(
+		authUser,
+		id,
+	)
 }
 
 func (s *Service) UserList(
@@ -167,7 +223,13 @@ func (s *Service) UserList(
 		)
 	}
 
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, err
+	}
+
 	return s.coreACService.UserList(
+		authUser,
 		permissionID,
 	)
 }
@@ -188,7 +250,13 @@ func (s *Service) ApproveUser(
 		)
 	}
 
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, err
+	}
+
 	return s.coreACService.ApproveUser(
+		authUser,
 		userID,
 	)
 }
@@ -209,7 +277,13 @@ func (s *Service) RevokeUser(
 		)
 	}
 
+	authUser, err := s.authUser()
+	if err != nil {
+		return nil, err
+	}
+
 	return s.coreACService.RevokeUser(
+		authUser,
 		userID,
 	)
 }

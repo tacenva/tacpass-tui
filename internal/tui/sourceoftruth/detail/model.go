@@ -62,6 +62,7 @@ func New(
 		appDeps,
 		ctx,
 		coreACService,
+		authService,
 		screenState,
 		actionState,
 	)

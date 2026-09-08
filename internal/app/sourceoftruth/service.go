@@ -49,7 +49,7 @@ func (s *Service) Initialize(
 		return "", nil, err
 	}
 
-	token, err := s.authService.RequestEnrollment(
+	token, err := s.authService.Enroll(
 		hostname,
 		keyPair.PublicKey,
 		coreEntity.UserStatusApproved,

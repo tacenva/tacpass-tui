@@ -49,6 +49,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		return m, cmd
 
+	case userListTUI.UserUpdatedMsg:
+		updated, cmd := m.UserList.Update(msg)
+		m.UserList = updated
+
+		return m, cmd
+
 	case tea.KeyMsg:
 		if m.ScreenState.Loading {
 			return m, nil

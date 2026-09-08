@@ -153,9 +153,7 @@ func (m Model) Navigation() string {
 		content = components.CrudNavigation(m.Width, true)
 	}
 
-	return styles.Navigation.
-		Width(m.Width).
-		Render(content)
+	return content
 }
 
 func (m Model) viewActionState() string {

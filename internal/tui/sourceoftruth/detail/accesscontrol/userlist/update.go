@@ -1,6 +1,29 @@
 package userlist
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"log"
+	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func debugLog(format string, args ...any) {
+	f, err := os.OpenFile(
+		"debug.log",
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0644,
+	)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	log.New(
+		f,
+		"[DEBUG] ",
+		log.LstdFlags,
+	).Printf(format, args...)
+}
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -62,8 +85,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		case "a":
 			if len(m.Users) == 0 {
+				debugLog("approve: no users")
 				return m, nil
 			}
+
+			debugLog(
+				"approve key: cursor=%d userID=%s permissionID=%s",
+				m.Cursor,
+				m.Users[m.Cursor].ID,
+				m.PermissionID,
+			)
 
 			m.ActionState.Start()
 
@@ -100,17 +131,46 @@ func (m *Model) normalizeCursor() {
 
 func (m Model) approveUser() tea.Cmd {
 	if len(m.Users) == 0 {
+		debugLog("approveUser: no users")
 		return nil
 	}
 
 	if m.Cursor < 0 || m.Cursor >= len(m.Users) {
+		debugLog(
+			"approveUser: invalid cursor=%d users=%d",
+			m.Cursor,
+			len(m.Users),
+		)
 		return nil
 	}
 
 	userID := m.Users[m.Cursor].ID
 
+	debugLog(
+		"approveUser: userID=%s permissionID=%s",
+		userID,
+		m.PermissionID,
+	)
+
 	return func() tea.Msg {
+		debugLog(
+			"approveUser cmd: calling service userID=%s",
+			userID,
+		)
+
 		user, err := m.service.ApproveUser(userID)
+
+		if err != nil {
+			debugLog(
+				"approveUser cmd: error=%v",
+				err,
+			)
+		} else {
+			debugLog(
+				"approveUser cmd: success userID=%s",
+				user.ID,
+			)
+		}
 
 		return UserUpdatedMsg{
 			User: user,

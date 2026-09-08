@@ -71,9 +71,7 @@ func (m *Model) Load() tea.Cmd {
 
 func (m Model) load() tea.Cmd {
 	return func() tea.Msg {
-		users, err := m.service.UserList(
-			m.PermissionID,
-		)
+		users, err := m.service.UserList(m.PermissionID)
 
 		return UsersLoadedMsg{
 			Users: users,

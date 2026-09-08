@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
+	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
@@ -71,6 +72,7 @@ func New(
 	appDeps *app.Deps,
 	context *app.Context,
 	coreACService *coreAC.Service,
+	coreAuthService *auth.Service,
 	ScreenState *state.Async,
 	ActionState *state.Async,
 ) Model {
@@ -78,6 +80,7 @@ func New(
 		appDeps,
 		context,
 		coreACService,
+		coreAuthService,
 	)
 
 	return Model{
@@ -95,12 +98,6 @@ func New(
 		FormCursor:    0,
 		FormPrivilege: entity.PrivilegeRead,
 
-		// UserList: userListTUI.New(
-		// 	service,
-		// 	"",
-		// 	ScreenState,
-		// 	ActionState,
-		// ),
 		ScreenState: ScreenState,
 		ActionState: ActionState,
 	}
