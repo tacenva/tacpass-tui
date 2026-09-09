@@ -70,6 +70,7 @@ func (s *Service) Access(
 	sotFile, err := s.appDeps.AppDB.File(
 		"source-of-truth",
 		masterPassword,
+		database.FileModeOpenOrCreate,
 	)
 	if err != nil {
 		return err

@@ -47,7 +47,7 @@ func (m Model) viewContent() string {
 
 	title := "Vault"
 	if m.needSync {
-		title = title + " outdated"
+		title = title + " (outdated)"
 	}
 
 	return styles.MainContent.Render(

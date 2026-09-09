@@ -59,22 +59,22 @@ func (c *Client) CreateVault(
 	)
 }
 
-func (c *Client) ListRecords(
-	address string,
-	vaultID string,
-	result any,
-) error {
-	path := fmt.Sprintf(
-		"/vault/%s/record",
-		vaultID,
-	)
+// func (c *Client) ListRecords(
+// 	address string,
+// 	vaultID string,
+// 	result any,
+// ) error {
+// 	path := fmt.Sprintf(
+// 		"/vault/%s/record",
+// 		vaultID,
+// 	)
 
-	return c.Get(
-		address,
-		path,
-		result,
-	)
-}
+// 	return c.Get(
+// 		address,
+// 		path,
+// 		result,
+// 	)
+// }
 
 func (c *Client) GetRecord(
 	address string,
@@ -92,6 +92,48 @@ func (c *Client) GetRecord(
 		address,
 		path,
 		result,
+	)
+}
+
+func (c *Client) CheckRecordBlob(
+	address string,
+	vaultID string,
+	replicaVersion uint64,
+	result any,
+) error {
+	path := fmt.Sprintf(
+		"/vault/%s/record/blob/check",
+		vaultID,
+	)
+
+	body := struct {
+		ReplicaVersion uint64 `json:"replica_version"`
+	}{
+		ReplicaVersion: replicaVersion,
+	}
+
+	return c.Post(
+		address,
+		path,
+		body,
+		result,
+	)
+}
+
+func (c *Client) RecordBlob(
+	address string,
+	vaultID string,
+) ([]byte, error) {
+	path := fmt.Sprintf(
+		"/vault/%s/record/blob",
+		vaultID,
+	)
+
+	return c.doRaw(
+		http.MethodPost,
+		address,
+		path,
+		nil,
 	)
 }
 

@@ -19,6 +19,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.SelectedVaultAccess = msg.VaultAccess
 		m.Records = msg.Records
 		m.Cursor = 0
+		m.needSync = msg.NeedSync
 		m.ScreenState.Success()
 
 		return m, nil

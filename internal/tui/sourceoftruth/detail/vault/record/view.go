@@ -80,8 +80,18 @@ func (m Model) viewContent() string {
 		OnFocus:  true,
 	}
 
+	title := "Vault Record"
+	if m.needSync {
+		title = title + " (outdated)"
+	}
+
 	return styles.MainContent.Render(
-		table.View(),
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			styles.Title.Render(title),
+			"",
+			table.View(),
+		),
 	)
 }
 

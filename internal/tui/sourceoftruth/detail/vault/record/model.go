@@ -13,6 +13,7 @@ import (
 type RecordsLoadedMsg struct {
 	VaultAccess *entity.VaultAccess
 	Records     []entity.VaultRecord
+	NeedSync    bool
 	Err         error
 }
 
@@ -61,6 +62,8 @@ type Model struct {
 
 	ScreenState *state.Async
 	ActionState *state.Async
+
+	needSync bool
 }
 
 func New(
@@ -94,13 +97,14 @@ func (m Model) Load(
 	m.ScreenState.Start()
 
 	return func() tea.Msg {
-		vaultRecords, err := m.VaultServiceTUI.ListRecords(
+		vaultRecords, needSync, err := m.VaultServiceTUI.ListRecords(
 			selectedVaultAccess,
 		)
 
 		return RecordsLoadedMsg{
 			VaultAccess: selectedVaultAccess,
 			Records:     vaultRecords,
+			NeedSync:    needSync,
 			Err:         err,
 		}
 	}
