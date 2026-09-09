@@ -8,10 +8,12 @@ import (
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/entity"
+	coreEntity "github.com/tacenva/tacpass-core/entity"
 	vaultCore "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/config"
+	"github.com/tacenva/tacpass-tui/internal/entity"
 )
 
 var (
@@ -24,6 +26,7 @@ type Service struct {
 	masterKey    string
 	vaultService *vaultCore.Service
 	authService  *auth.Service
+	sotService   *sourceoftruth.Service
 }
 
 func NewService(
@@ -32,6 +35,7 @@ func NewService(
 	masterKey string,
 	vaultService *vaultCore.Service,
 	authService *auth.Service,
+	sotService *sourceoftruth.Service,
 ) *Service {
 	return &Service{
 		appDeps:      appDeps,
@@ -39,16 +43,17 @@ func NewService(
 		masterKey:    masterKey,
 		authService:  authService,
 		vaultService: vaultService,
+		sotService:   sotService,
 	}
 }
 
-func (s *Service) List() ([]entity.VaultAccess, error) {
+func (s *Service) List() ([]coreEntity.VaultAccess, bool, error) {
 	if s.context == nil {
-		return nil, errors.New("context is nil")
+		return nil, false, errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
-		return nil, errors.New("selected source of truth is nil")
+		return nil, false, errors.New("selected source of truth is nil")
 	}
 
 	vaultPath := s.appDeps.Config.Path(
@@ -66,31 +71,69 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 		s.masterKey,
 	)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	var vaultAccessList []entity.VaultAccess
+	var vaultAccessList []coreEntity.VaultAccess
 
 	err = vaultFile.FindAll(
 		&vaultAccessList,
 	)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if s.context.IsRemote {
-		return s.Sync()
+		switch s.context.SelectedSoT.SyncMode {
+		case entity.SyncModeManual:
+			needSync, err := s.needSync()
+			if err != nil {
+				return nil, false, err
+			}
+
+			return vaultAccessList, needSync, nil
+
+		case entity.SyncModeAuto:
+			vaultAccessList, err := s.sync()
+			if err != nil {
+				return nil, false, err
+			}
+
+			return vaultAccessList, false, nil
+		}
 	}
 
-	return vaultAccessList, nil
+	return vaultAccessList, false, nil
 }
 
-func (s *Service) Sync() ([]entity.VaultAccess, error) {
-	var vaultAccessList []entity.VaultAccess
+func (s *Service) needSync() (bool, error) {
+	var result struct {
+		NeedSync bool `json:"need_sync"`
+	}
 
-	err := s.appDeps.Client.ListVaults(
+	err := s.appDeps.Client.CheckVaultSync(
 		s.context.SelectedSoT.Address,
-		&vaultAccessList,
+		s.context.SelectedSoT.HashSync,
+		&result,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return result.NeedSync, nil
+}
+
+func (s *Service) sync() ([]coreEntity.VaultAccess, error) {
+	var result struct {
+		NeedSync        bool                     `json:"need_sync"`
+		ServerVaultHash string                   `json:"server_vault_hash"`
+		VaultAccessList []coreEntity.VaultAccess `json:"vault_access_list,omitempty"`
+	}
+
+	err := s.appDeps.Client.VaultSync(
+		s.context.SelectedSoT.Address,
+		s.context.SelectedSoT.HashSync,
+		&result,
 	)
 	if err != nil {
 		return nil, err
@@ -112,21 +155,40 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 		return nil, err
 	}
 
-	vaultAccessPointers := make(
-		[]*entity.VaultAccess,
-		0,
-		len(vaultAccessList),
-	)
-
-	for i := range vaultAccessList {
-		vaultAccessPointers = append(
-			vaultAccessPointers,
-			&vaultAccessList[i],
+	if result.NeedSync {
+		vaultAccessPointers := make(
+			[]*coreEntity.VaultAccess,
+			0,
+			len(result.VaultAccessList),
 		)
+
+		for i := range result.VaultAccessList {
+			vaultAccessPointers = append(
+				vaultAccessPointers,
+				&result.VaultAccessList[i],
+			)
+		}
+
+		err = vaultFile.UpdateOrCreateBulk(
+			vaultAccessPointers,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		s.context.SelectedSoT.HashSync = result.ServerVaultHash
+
+		if err = s.sotService.Update(
+			s.context.SelectedSoT,
+		); err != nil {
+			return nil, err
+		}
 	}
 
-	err = vaultFile.UpdateOrCreateBulk(
-		vaultAccessPointers,
+	var vaultAccessList []coreEntity.VaultAccess
+
+	err = vaultFile.FindAll(
+		&vaultAccessList,
 	)
 	if err != nil {
 		return nil, err
@@ -135,10 +197,60 @@ func (s *Service) Sync() ([]entity.VaultAccess, error) {
 	return vaultAccessList, nil
 }
 
+// func (s *Service) Sync() ([]coreEntity.VaultAccess, error) {
+// 	var vaultAccessList []coreEntity.VaultAccess
+
+// 	err := s.appDeps.Client.ListVaults(
+// 		s.context.SelectedSoT.Address,
+// 		&vaultAccessList,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	db := database.New(
+// 		s.appDeps.Config.Path(
+// 			config.NodeDirName,
+// 			s.context.SelectedSoT.ID,
+// 			"vault",
+// 		),
+// 	)
+
+// 	vaultFile, err := db.File(
+// 		"vault",
+// 		s.masterKey,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	vaultAccessPointers := make(
+// 		[]*coreEntity.VaultAccess,
+// 		0,
+// 		len(vaultAccessList),
+// 	)
+
+// 	for i := range vaultAccessList {
+// 		vaultAccessPointers = append(
+// 			vaultAccessPointers,
+// 			&vaultAccessList[i],
+// 		)
+// 	}
+
+// 	err = vaultFile.UpdateOrCreateBulk(
+// 		vaultAccessPointers,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return vaultAccessList, nil
+// }
+
 func (s *Service) createVaultRemotely(
 	vaultName string,
-) (*entity.VaultAccess, error) {
-	var vaultAccess entity.VaultAccess
+) (*coreEntity.VaultAccess, error) {
+	var vaultAccess coreEntity.VaultAccess
 
 	body := struct {
 		Name string `json:"name"`
@@ -160,9 +272,9 @@ func (s *Service) createVaultRemotely(
 
 func (s *Service) CreateVault(
 	vaultName string,
-) (*entity.VaultAccess, error) {
+) (*coreEntity.VaultAccess, error) {
 	var (
-		vaultAccess *entity.VaultAccess
+		vaultAccess *coreEntity.VaultAccess
 		err         error
 	)
 
@@ -217,7 +329,7 @@ func (s *Service) CreateVault(
 }
 
 func (s *Service) UpdateVault(
-	vault *entity.Vault,
+	vault *coreEntity.Vault,
 ) error {
 	if vault == nil {
 		return errors.New(
@@ -250,7 +362,7 @@ func (s *Service) UpdateVault(
 	}
 
 	if s.context.SelectedSoT.Address != "localhost" {
-		var updated entity.Vault
+		var updated coreEntity.Vault
 
 		err := s.appDeps.Client.UpdateVault(
 			s.context.SelectedSoT.Address,
@@ -303,7 +415,7 @@ func (s *Service) UpdateVault(
 		return err
 	}
 
-	var vaultAccessList []entity.VaultAccess
+	var vaultAccessList []coreEntity.VaultAccess
 
 	err = vaultFile.FindWhere(
 		&vaultAccessList,
@@ -331,7 +443,7 @@ func (s *Service) UpdateVault(
 }
 
 func (s *Service) DeleteVault(
-	vault *entity.Vault,
+	vault *coreEntity.Vault,
 ) error {
 	if vault == nil {
 		return errors.New(
@@ -398,7 +510,7 @@ func (s *Service) DeleteVault(
 		return err
 	}
 
-	var vaultAccessList []entity.VaultAccess
+	var vaultAccessList []coreEntity.VaultAccess
 
 	err = vaultFile.FindWhere(
 		&vaultAccessList,
@@ -435,8 +547,8 @@ func (s *Service) deleteVaultFile(vaultId string) error {
 }
 
 func (s *Service) ListRecords(
-	vaultAccess *entity.VaultAccess,
-) ([]entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+) ([]coreEntity.VaultRecord, error) {
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -473,8 +585,8 @@ func (s *Service) ListRecords(
 }
 
 func (s *Service) listRecordsLocally(
-	vaultAccess *entity.VaultAccess,
-) ([]entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+) ([]coreEntity.VaultRecord, error) {
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
@@ -498,7 +610,7 @@ func (s *Service) listRecordsLocally(
 		return nil, err
 	}
 
-	var records []entity.VaultRecord
+	var records []coreEntity.VaultRecord
 
 	err = vaultFile.FindAll(
 		&records,
@@ -511,8 +623,8 @@ func (s *Service) listRecordsLocally(
 }
 
 func (s *Service) listRecordsRemotely(
-	vaultAccess *entity.VaultAccess,
-) ([]entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+) ([]coreEntity.VaultRecord, error) {
 	var encryptedRecords map[string][]byte
 
 	err := s.appDeps.Client.ListRecords(
@@ -547,7 +659,7 @@ func (s *Service) listRecordsRemotely(
 	)
 
 	records := make(
-		[]entity.VaultRecord,
+		[]coreEntity.VaultRecord,
 		0,
 		len(encryptedRecords),
 	)
@@ -561,7 +673,7 @@ func (s *Service) listRecordsRemotely(
 			return nil, err
 		}
 
-		var record entity.VaultRecord
+		var record coreEntity.VaultRecord
 
 		err = json.Unmarshal(
 			decrypted,
@@ -583,9 +695,9 @@ func (s *Service) listRecordsRemotely(
 }
 
 func (s *Service) AppendRecord(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -630,9 +742,9 @@ func (s *Service) AppendRecord(
 }
 
 func (s *Service) appendRecordLocally(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
@@ -667,9 +779,9 @@ func (s *Service) appendRecordLocally(
 }
 
 func (s *Service) appendRecordRemotely(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	raw, err := s.EncryptRecord(
 		vaultAccess,
 		record,
@@ -697,9 +809,9 @@ func (s *Service) appendRecordRemotely(
 }
 
 func (s *Service) UpdateRecord(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	if vaultAccess == nil {
 		return nil, errors.New(
 			"vault access cannot be nil",
@@ -750,9 +862,9 @@ func (s *Service) UpdateRecord(
 }
 
 func (s *Service) updateRecordLocally(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
@@ -787,9 +899,9 @@ func (s *Service) updateRecordLocally(
 }
 
 func (s *Service) updateRecordRemotely(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
-) (*entity.VaultRecord, error) {
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
+) (*coreEntity.VaultRecord, error) {
 	raw, err := s.EncryptRecord(
 		vaultAccess,
 		record,
@@ -812,8 +924,8 @@ func (s *Service) updateRecordRemotely(
 }
 
 func (s *Service) EncryptRecord(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
 ) ([]byte, error) {
 	if vaultAccess == nil {
 		return nil, errors.New(
@@ -868,8 +980,8 @@ func (s *Service) EncryptRecord(
 }
 
 func (s *Service) DeleteRecord(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
 ) error {
 	if vaultAccess == nil {
 		return errors.New(
@@ -921,8 +1033,8 @@ func (s *Service) DeleteRecord(
 }
 
 func (s *Service) deleteRecordLocally(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
 ) error {
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
@@ -958,8 +1070,8 @@ func (s *Service) deleteRecordLocally(
 }
 
 func (s *Service) deleteRecordRemotely(
-	vaultAccess *entity.VaultAccess,
-	record *entity.VaultRecord,
+	vaultAccess *coreEntity.VaultAccess,
+	record *coreEntity.VaultRecord,
 ) error {
 	return s.appDeps.Client.DeleteRecord(
 		s.context.SelectedSoT.Address,

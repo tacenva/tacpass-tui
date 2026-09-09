@@ -10,6 +10,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.Width = msg.Width
 		m.Height = msg.Height
 
+	case RecordsLoadedMsg:
+		if msg.Err != nil {
+			m.ScreenState.Fail(msg.Err)
+			return m, nil
+		}
+
+		m.SelectedVaultAccess = msg.VaultAccess
+		m.Records = msg.Records
+		m.Cursor = 0
+		m.ScreenState.Success()
+
+		return m, nil
+
 	case tea.KeyMsg:
 		if m.ScreenState.Loading {
 			return m, nil

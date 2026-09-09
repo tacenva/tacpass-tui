@@ -3,11 +3,18 @@ package vaultrecord
 import (
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/vault"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
+
+type RecordsLoadedMsg struct {
+	VaultAccess *entity.VaultAccess
+	Records     []entity.VaultRecord
+	Err         error
+}
 
 type Focus int
 
@@ -77,29 +84,26 @@ func New(
 	}
 }
 
-func (m *Model) Load(
+func (m Model) Load(
 	selectedVaultAccess *entity.VaultAccess,
-) error {
+) tea.Cmd {
 	if selectedVaultAccess == nil {
 		return nil
 	}
 
-	m.SelectedVaultAccess = selectedVaultAccess
 	m.ScreenState.Start()
 
-	vaultRecords, err := m.VaultServiceTUI.ListRecords(
-		selectedVaultAccess,
-	)
-	if err != nil {
-		m.ScreenState.Fail(err)
-		return err
+	return func() tea.Msg {
+		vaultRecords, err := m.VaultServiceTUI.ListRecords(
+			selectedVaultAccess,
+		)
+
+		return RecordsLoadedMsg{
+			VaultAccess: selectedVaultAccess,
+			Records:     vaultRecords,
+			Err:         err,
+		}
 	}
-
-	m.Records = vaultRecords
-	m.Cursor = 0
-	m.ScreenState.Success()
-
-	return nil
 }
 
 func (m Model) Selected() *entity.VaultRecord {

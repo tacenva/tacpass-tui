@@ -27,6 +27,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		updated, cmd := m.VaultRecordTUI.Update(msg)
 		m.VaultRecordTUI = updated
 
+		if !m.VaultRecordTUI.Active {
+			m.Focus = FocusContent
+		}
+
 		return m, cmd
 	}
 
@@ -189,14 +193,11 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 		selectedVaultAccess := m.VaultAccessList[m.Cursor]
 
-		if err := m.VaultRecordTUI.Load(
-			&selectedVaultAccess,
-		); err != nil {
-			m.ScreenState.Fail(err)
-			return m, nil
-		}
-
 		m.VaultRecordTUI.Active = true
+
+		return m, m.VaultRecordTUI.Load(
+			&selectedVaultAccess,
+		)
 
 	case "esc":
 		m.Focus = FocusNone
