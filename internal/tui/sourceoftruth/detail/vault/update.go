@@ -1,10 +1,13 @@
 package vault
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-tui/util/debug"
 )
 
 type VaultCreatedMsg struct {
@@ -43,6 +46,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		if msg.Err != nil {
 			m.ScreenState.Fail(msg.Err)
 			return m, nil
+		}
+
+		data, err := json.Marshal(msg.VaultAccessList)
+		if err != nil {
+			debug.Error(fmt.Sprintf(
+				"failed to marshal vault access list: %v",
+				err,
+			))
+		} else {
+			debug.Print(string(data))
 		}
 
 		m.VaultAccessList = msg.VaultAccessList

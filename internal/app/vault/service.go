@@ -169,7 +169,7 @@ func (s *Service) sync() ([]coreEntity.VaultAccess, error) {
 			)
 		}
 
-		err = vaultFile.UpdateOrCreateBulk(
+		err = vaultFile.Sync(
 			vaultAccessPointers,
 		)
 		if err != nil {
