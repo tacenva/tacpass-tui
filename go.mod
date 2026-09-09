@@ -7,8 +7,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/oklog/ulid/v2 v2.1.2
-	github.com/tacenva/database v0.1.0
-	github.com/tacenva/tacpass-core v0.1.0
+	github.com/tacenva/database v0.2.0
+	github.com/tacenva/tacpass-core v0.2.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
