@@ -60,16 +60,14 @@ func (m Model) viewContent() string {
 		)
 	}
 
-	return lipgloss.NewStyle().
-		PaddingLeft(4).
-		Render(
-			lipgloss.JoinVertical(
-				lipgloss.Left,
-				styles.Normal.Render("Access Control"),
-				"",
-				table.View(),
-			),
-		)
+	return styles.MainContent.Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			styles.Title.Render("Access Control"),
+			"",
+			table.View(),
+		),
+	)
 }
 
 func (m Model) viewForm() string {

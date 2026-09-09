@@ -29,40 +29,40 @@ func Disable() {
 }
 
 func Print(message string) {
-	write("DEBUG", format(message))
+	write("DEBUG", message)
 }
 
 func Info(message string) {
-	write("INFO", format(message))
+	write("INFO", message)
 }
 
 func Error(message string) {
-	write("ERROR", format(message))
+	write("ERROR", message)
 }
 
-func Event(name string, fields map[string]any) {
-	message := name
-
-	for key, value := range fields {
-		message += fmt.Sprintf(" %s=%v", key, value)
-	}
-
-	write("EVENT", format(message))
-}
-
-func format(message string) string {
-	var data any
-
-	if err := json.Unmarshal([]byte(message), &data); err != nil {
-		return message
-	}
-
-	formatted, err := json.MarshalIndent(data, "", "  ")
+func Event(name string, data any) {
+	raw, err := json.Marshal(data)
 	if err != nil {
-		return message
+		write(
+			"EVENT",
+			fmt.Sprintf(
+				"%s error=%v",
+				name,
+				err,
+			),
+		)
+
+		return
 	}
 
-	return string(formatted)
+	write(
+		"EVENT",
+		fmt.Sprintf(
+			"%s %s",
+			name,
+			string(raw),
+		),
+	)
 }
 
 func write(level, message string) {
@@ -83,6 +83,8 @@ func write(level, message string) {
 	}
 	defer file.Close()
 
+	message = format(message)
+
 	_, _ = fmt.Fprintf(
 		file,
 		"[%s] %s %s\n",
@@ -90,4 +92,26 @@ func write(level, message string) {
 		level,
 		message,
 	)
+}
+
+func format(message string) string {
+	var data any
+
+	if err := json.Unmarshal(
+		[]byte(message),
+		&data,
+	); err != nil {
+		return message
+	}
+
+	formatted, err := json.MarshalIndent(
+		data,
+		"",
+		"  ",
+	)
+	if err != nil {
+		return message
+	}
+
+	return string(formatted)
 }

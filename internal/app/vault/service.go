@@ -14,6 +14,7 @@ import (
 	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/util/debug"
 )
 
 var (
@@ -94,7 +95,7 @@ func (s *Service) List() ([]coreEntity.VaultAccess, bool, error) {
 			return vaultAccessList, needSync, nil
 
 		case entity.SyncModeAuto:
-			vaultAccessList, err := s.sync()
+			vaultAccessList, err := s.Sync()
 			if err != nil {
 				return nil, false, err
 			}
@@ -123,7 +124,7 @@ func (s *Service) needSync() (bool, error) {
 	return result.NeedSync, nil
 }
 
-func (s *Service) sync() ([]coreEntity.VaultAccess, error) {
+func (s *Service) Sync() ([]coreEntity.VaultAccess, error) {
 	var result struct {
 		NeedSync        bool                     `json:"need_sync"`
 		ServerVaultHash string                   `json:"server_vault_hash"`
@@ -196,56 +197,6 @@ func (s *Service) sync() ([]coreEntity.VaultAccess, error) {
 
 	return vaultAccessList, nil
 }
-
-// func (s *Service) Sync() ([]coreEntity.VaultAccess, error) {
-// 	var vaultAccessList []coreEntity.VaultAccess
-
-// 	err := s.appDeps.Client.ListVaults(
-// 		s.context.SelectedSoT.Address,
-// 		&vaultAccessList,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	db := database.New(
-// 		s.appDeps.Config.Path(
-// 			config.NodeDirName,
-// 			s.context.SelectedSoT.ID,
-// 			"vault",
-// 		),
-// 	)
-
-// 	vaultFile, err := db.File(
-// 		"vault",
-// 		s.masterKey,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	vaultAccessPointers := make(
-// 		[]*coreEntity.VaultAccess,
-// 		0,
-// 		len(vaultAccessList),
-// 	)
-
-// 	for i := range vaultAccessList {
-// 		vaultAccessPointers = append(
-// 			vaultAccessPointers,
-// 			&vaultAccessList[i],
-// 		)
-// 	}
-
-// 	err = vaultFile.UpdateOrCreateBulk(
-// 		vaultAccessPointers,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return vaultAccessList, nil
-// }
 
 func (s *Service) createVaultRemotely(
 	vaultName string,
@@ -636,19 +587,7 @@ func (s *Service) listRecordsRemotely(
 		return nil, err
 	}
 
-	vaultKeyEncoded, err := s.context.SelectedSoT.KeyPair.Open(
-		vaultAccess.VaultKey,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	vaultKey, err := base64.RawURLEncoding.DecodeString(
-		string(vaultKeyEncoded),
-	)
-	if err != nil {
-		return nil, err
-	}
+	debug.Event("encryptedRecords", encryptedRecords)
 
 	db := database.New(
 		s.appDeps.Config.Path(
@@ -658,40 +597,16 @@ func (s *Service) listRecordsRemotely(
 		),
 	)
 
-	records := make(
-		[]coreEntity.VaultRecord,
-		0,
-		len(encryptedRecords),
-	)
-
-	for recordID, encryptedData := range encryptedRecords {
-		decrypted, err := db.Decrypt(
-			string(encryptedData),
-			vaultKey,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		var record coreEntity.VaultRecord
-
-		err = json.Unmarshal(
-			decrypted,
-			&record,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		record.ID = recordID
-
-		records = append(
-			records,
-			record,
-		)
+	rawDB, err := db.RawFile(vaultAccess.VaultID)
+	if err != nil {
+		return nil, err
 	}
 
-	return records, nil
+	if err := rawDB.Sync(encryptedRecords); err != nil {
+		return nil, err
+	}
+
+	return s.listRecordsLocally(vaultAccess)
 }
 
 func (s *Service) AppendRecord(

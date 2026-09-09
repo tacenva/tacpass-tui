@@ -150,7 +150,14 @@ func (m Model) Navigation() string {
 	if m.Focus == FocusEdit || m.Focus == FocusNew {
 		content = components.FormNavigation(m.Width, "Ctrl+S")
 	} else {
-		content = components.CrudNavigation(m.Width, true)
+		var extraItems []string
+		if m.Cursor < len(m.Records) {
+			extraItems = components.DeleteEditItems
+		}
+		content = components.Navigation(
+			m.Width,
+			extraItems...,
+		)
 	}
 
 	return content

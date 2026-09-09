@@ -45,8 +45,18 @@ func (m Model) viewContent() string {
 		OnFocus:  m.Focus == FocusContent,
 	}
 
+	title := "Vault"
+	if m.needSync {
+		title = title + " outdated"
+	}
+
 	return styles.MainContent.Render(
-		table.View(),
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			styles.Title.Render(title),
+			"",
+			table.View(),
+		),
 	)
 }
 
@@ -120,9 +130,15 @@ func (m Model) Navigation() string {
 
 	switch m.Focus {
 	case FocusContent:
-		content = components.CrudNavigation(
+		var extraItems []string
+		if m.Cursor < len(m.VaultAccessList) {
+			extraItems = components.DeleteEditItems
+		}
+
+		extraItems = append(extraItems, styles.Key("s", "Sync"))
+		content = components.Navigation(
 			m.Width,
-			m.Cursor < len(m.VaultAccessList),
+			extraItems...,
 		)
 
 	case FocusNewVault:

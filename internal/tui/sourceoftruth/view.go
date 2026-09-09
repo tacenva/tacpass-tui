@@ -133,9 +133,13 @@ func (m Model) viewNavigation() string {
 		navigation = m.Detail.Navigation()
 
 	default:
-		content := components.CrudNavigation(
+		var extraItems []string
+		if m.Cursor < len(m.SoTList) {
+			extraItems = components.DeleteEditItems
+		}
+		content := components.Navigation(
 			m.Width,
-			m.Cursor < len(m.SoTList),
+			extraItems...,
 		)
 
 		navigation = styles.Navigation.

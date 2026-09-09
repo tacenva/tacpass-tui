@@ -60,6 +60,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		m.VaultAccessList = msg.VaultAccessList
 		m.normalizeCursor()
+		m.needSync = msg.NeedSync
 		m.ScreenState.Success()
 
 	case VaultCreatedMsg:
@@ -190,6 +191,10 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 				Err:     err,
 			}
 		}
+
+	case "s":
+		m.ActionState.Start()
+		return m, m.Sync()
 
 	case "enter":
 		if m.Cursor == len(m.VaultAccessList) {

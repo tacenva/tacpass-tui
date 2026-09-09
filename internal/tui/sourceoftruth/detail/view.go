@@ -119,10 +119,7 @@ func (m Model) Navigation() string {
 
 	switch m.Focus {
 	case FocusSidebar:
-		content = components.CrudNavigation(
-			m.Width,
-			false,
-		)
+		content = components.Navigation(m.Width)
 
 	case FocusContent:
 		switch m.SidebarCursor {

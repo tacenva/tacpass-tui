@@ -6,22 +6,21 @@ import (
 	"github.com/tacenva/tacpass-tui/internal/styles"
 )
 
-func CrudNavigation(
+var DeleteEditItems = []string{
+	styles.Key("e", "Edit"),
+	styles.Key("Del", "Delete"),
+}
+
+func Navigation(
 	width int,
-	canEdit bool,
+	extraItems ...string,
 ) string {
 	items := []string{
 		styles.Key("↑↓", "Navigate"),
 		styles.Key("↵", "Select"),
 	}
 
-	if canEdit {
-		items = append(
-			items,
-			styles.Key("e", "Edit"),
-			styles.Key("Del", "Delete"),
-		)
-	}
+	items = append(items, extraItems...)
 
 	items = append(
 		items,

@@ -22,6 +22,7 @@ const (
 
 type VaultsLoadedMsg struct {
 	VaultAccessList []entity.VaultAccess
+	NeedSync        bool
 	Err             error
 }
 
@@ -46,6 +47,8 @@ type Model struct {
 
 	ScreenState *state.Async
 	ActionState *state.Async
+
+	needSync bool
 }
 
 func New(
@@ -84,6 +87,7 @@ func New(
 
 		ScreenState: screenState,
 		ActionState: actionState,
+		needSync:    false,
 	}
 }
 
@@ -91,10 +95,25 @@ func (m Model) Load() tea.Cmd {
 	m.ScreenState.Start()
 
 	return func() tea.Msg {
-		vaultAccessList, _, err := m.VaultServiceTUI.List()
+		vaultAccessList, needSync, err := m.VaultServiceTUI.List()
 
 		return VaultsLoadedMsg{
 			VaultAccessList: vaultAccessList,
+			NeedSync:        needSync,
+			Err:             err,
+		}
+	}
+}
+
+func (m Model) Sync() tea.Cmd {
+	m.ScreenState.Start()
+
+	return func() tea.Msg {
+		vaultAccessList, err := m.VaultServiceTUI.Sync()
+
+		return VaultsLoadedMsg{
+			VaultAccessList: vaultAccessList,
+			NeedSync:        err != nil,
 			Err:             err,
 		}
 	}
