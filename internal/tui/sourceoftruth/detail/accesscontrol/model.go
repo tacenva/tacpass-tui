@@ -8,6 +8,7 @@ import (
 	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
+	"github.com/tacenva/tacpass-core/util/keyring"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
 	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
@@ -23,6 +24,7 @@ const (
 	FocusContent
 	FocusForm
 	FocusUsers
+	FocusCreatedKey
 )
 
 type FormMode int
@@ -39,7 +41,9 @@ type PermissionsLoadedMsg struct {
 }
 
 type PermissionSavedMsg struct {
-	Err error
+	Permission *entity.Permission
+	KeyPair    *keyring.KeyPair
+	Err        error
 }
 
 type Model struct {
@@ -66,6 +70,9 @@ type Model struct {
 
 	ScreenState *state.Async
 	ActionState *state.Async
+
+	CreatedPrivateKey string
+	CreatedPublicKey  string
 }
 
 func New(

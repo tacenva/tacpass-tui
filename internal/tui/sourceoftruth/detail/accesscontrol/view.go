@@ -15,9 +15,54 @@ func (m Model) View() string {
 	case FocusUsers:
 		return m.UserList.View()
 
+	case FocusCreatedKey:
+		return m.viewCreatedKey()
+
 	default:
 		return m.viewContent()
 	}
+}
+
+func (m Model) viewCreatedKey() string {
+	labelStyle := lipgloss.NewStyle().
+		Width(12)
+
+	valueStyle := lipgloss.NewStyle().
+		Width(80)
+
+	publicKey := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		labelStyle.Render("Public Key"),
+		valueStyle.Render(m.CreatedPublicKey),
+	)
+
+	privateKey := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		labelStyle.Render("Private Key"),
+		valueStyle.Render(m.CreatedPrivateKey),
+	)
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		publicKey,
+		"",
+		privateKey,
+	)
+
+	return lipgloss.NewStyle().
+		PaddingLeft(4).
+		Render(
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				styles.Normal.Render("Access Control Created"),
+				"",
+				content,
+				"",
+				styles.Muted.Render(
+					"Save both keys securely. The private key will not be shown again.",
+				),
+			),
+		)
 }
 
 func (m Model) viewContent() string {
@@ -159,6 +204,13 @@ func (m Model) Navigation() string {
 
 	case FocusUsers:
 		return m.UserList.Navigation()
+
+	case FocusCreatedKey:
+		return styles.NavigationItems(
+			m.Width,
+			styles.Key("↑↓", "Navigate"),
+			styles.Key("Esc", "Back"),
+		)
 
 	default:
 		return styles.NavigationItems(

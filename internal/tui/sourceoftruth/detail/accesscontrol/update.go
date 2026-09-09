@@ -39,6 +39,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 
 		m.ActionState.Success()
+
+		if msg.KeyPair != nil {
+			m.CreatedPublicKey = msg.KeyPair.PublicKey
+			m.CreatedPrivateKey = msg.KeyPair.PrivateKey
+			m.Focus = FocusCreatedKey
+
+			return m, m.Load()
+		}
+
 		m.closeForm()
 
 		return m, m.Load()
@@ -56,6 +65,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, cmd
 
 	case tea.KeyMsg:
+		switch m.Focus {
+		case FocusCreatedKey:
+			switch msg.String() {
+			case "enter", "esc":
+				m.CreatedPrivateKey = ""
+				m.closeForm()
+
+				return m, nil
+			}
+
+			return m, nil
+		}
+
 		if m.ScreenState.Loading {
 			return m, nil
 		}
@@ -197,13 +219,15 @@ func (m *Model) saveForm() tea.Cmd {
 	switch m.FormMode {
 	case FormNew:
 		return func() tea.Msg {
-			_, _, err := m.service.Create(
+			permission, keyPair, err := m.service.Create(
 				name,
 				privilege,
 			)
 
 			return PermissionSavedMsg{
-				Err: err,
+				Permission: permission,
+				KeyPair:    keyPair,
+				Err:        err,
 			}
 		}
 
