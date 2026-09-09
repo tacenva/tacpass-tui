@@ -50,6 +50,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					msg.Hostname,
 					msg.Address,
 					keypair,
+					msg.SyncMode,
 				)
 			}
 
@@ -130,6 +131,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				selectedSoT.Address,
 				selectedSoT.KeyPair.PublicKey,
 				selectedSoT.KeyPair.PrivateKey,
+				selectedSoT.SyncMode,
 				m.ActionState,
 			)
 
@@ -217,6 +219,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.coreServices.Vault,
 				m.coreServices.Auth,
 				m.coreServices.AccessControl,
+				m.SoTService,
 				m.ScreenState,
 				m.ActionState,
 			)

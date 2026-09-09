@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/tacpass-tui/internal/entity"
 )
 
 const defaultPort = "9443"
@@ -37,6 +38,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "down":
 			m.nextField()
 
+		case "left":
+			if m.EditField == FieldSyncMode {
+				m.previousSyncMode()
+			}
+			return m, nil
+
+		case "right":
+			if m.EditField == FieldSyncMode {
+				m.nextSyncMode()
+			}
+			return m, nil
+
 		case "backspace":
 			m.deleteLast()
 		}
@@ -50,16 +63,26 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m *Model) nextField() {
+	if m.Address == "localhost" && m.EditField == FieldPrivateKey {
+		m.EditField = FieldHostname
+		return
+	}
+
 	m.EditField++
 
-	if m.EditField > FieldPrivateKey {
+	if m.EditField > FieldSyncMode {
 		m.EditField = FieldHostname
 	}
 }
 
 func (m *Model) previousField() {
-	if m.EditField == FieldHostname {
+	if m.Address == "localhost" && m.EditField == FieldHostname {
 		m.EditField = FieldPrivateKey
+		return
+	}
+
+	if m.EditField == FieldHostname {
+		m.EditField = FieldSyncMode
 		return
 	}
 
@@ -138,6 +161,27 @@ func (m Model) submit() tea.Cmd {
 			Address:    normalizeAddress(m.Address),
 			PublicKey:  m.PublicKey,
 			PrivateKey: m.PrivateKey,
+			SyncMode:   m.SyncMode,
 		}
+	}
+}
+
+func (m *Model) nextSyncMode() {
+	switch m.SyncMode {
+	case entity.SyncModeManual:
+		m.SyncMode = entity.SyncModeAuto
+
+	default:
+		m.SyncMode = entity.SyncModeManual
+	}
+}
+
+func (m *Model) previousSyncMode() {
+	switch m.SyncMode {
+	case entity.SyncModeAuto:
+		m.SyncMode = entity.SyncModeManual
+
+	default:
+		m.SyncMode = entity.SyncModeAuto
 	}
 }

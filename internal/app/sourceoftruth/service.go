@@ -112,6 +112,7 @@ func (s *Service) Create(
 	hostnameAlias string,
 	address string,
 	keypair keyring.KeyPair,
+	syncMode entity.SyncMode,
 ) (string, error) {
 	if s.sotFile == nil {
 		return "", ErrForbidden
@@ -160,6 +161,8 @@ func (s *Service) Create(
 			AuthToken:      response.AuthToken,
 			KeyPair:        keypair,
 			TLSFingerprint: fingerprint,
+			HashSync:       "",
+			SyncMode:       syncMode,
 		},
 	)
 }

@@ -46,6 +46,32 @@ func (m Model) View() string {
 			m.privateKeyView(),
 			m.EditField == FieldPrivateKey,
 		),
+		// "",
+		// components.FormField(
+		// 	"Sync Mode",
+		// 	string(m.SyncMode),
+		// 	m.EditField == FieldSyncMode,
+		// ),
+		// "",
+		// styles.Muted.Render(
+		// 	"Use ←→ to change sync mode",
+		// ),
+	}
+
+	if m.Address != "localhost" {
+		rows = append(
+			rows,
+			"",
+			components.FormField(
+				"Sync Mode",
+				string(m.SyncMode),
+				m.EditField == FieldSyncMode,
+			),
+			"",
+			styles.Muted.Render(
+				"Use ←→ to change sync mode",
+			),
+		)
 	}
 
 	if content := m.viewActionState(); content != "" {

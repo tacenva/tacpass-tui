@@ -5,6 +5,7 @@ import (
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 
 	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
@@ -45,6 +46,7 @@ func New(
 	coreVaultService *vault.Service,
 	authService *auth.Service,
 	coreACService *accesscontrol.Service,
+	sotService *sourceoftruth.Service,
 	screenState *state.Async,
 	actionState *state.Async,
 ) Model {
@@ -54,6 +56,7 @@ func New(
 		masterKey,
 		coreVaultService,
 		authService,
+		sotService,
 		screenState,
 		actionState,
 	)

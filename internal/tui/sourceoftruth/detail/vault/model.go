@@ -6,6 +6,7 @@ import (
 	"github.com/tacenva/tacpass-core/entity"
 	coreVault "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/app/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
@@ -53,6 +54,7 @@ func New(
 	masterKey string,
 	coreVaultService *coreVault.Service,
 	authService *auth.Service,
+	sotService *sourceoftruth.Service,
 	screenState *state.Async,
 	actionState *state.Async,
 ) Model {
@@ -62,6 +64,7 @@ func New(
 		masterKey,
 		coreVaultService,
 		authService,
+		sotService,
 	)
 
 	return Model{
@@ -88,7 +91,7 @@ func (m Model) Load() tea.Cmd {
 	m.ScreenState.Start()
 
 	return func() tea.Msg {
-		vaultAccessList, err := m.VaultServiceTUI.List()
+		vaultAccessList, _, err := m.VaultServiceTUI.List()
 
 		return VaultsLoadedMsg{
 			VaultAccessList: vaultAccessList,

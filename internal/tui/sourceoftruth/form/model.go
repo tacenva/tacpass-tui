@@ -1,6 +1,9 @@
 package form
 
-import "github.com/tacenva/tacpass-tui/internal/tui/state"
+import (
+	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/tui/state"
+)
 
 type Field int
 
@@ -9,6 +12,7 @@ const (
 	FieldAddress
 	FieldPublicKey
 	FieldPrivateKey
+	FieldSyncMode
 )
 
 type Model struct {
@@ -21,6 +25,7 @@ type Model struct {
 	Address    string
 	PublicKey  string
 	PrivateKey string
+	SyncMode   entity.SyncMode
 
 	EditField Field
 	Editing   bool
@@ -32,6 +37,7 @@ func New(actionState *state.Async) Model {
 	return Model{
 		Active:      true,
 		EditField:   FieldHostname,
+		SyncMode:    entity.SyncModeAuto,
 		ActionState: actionState,
 	}
 }
@@ -41,6 +47,7 @@ func NewEdit(
 	address string,
 	publicKey string,
 	privateKey string,
+	syncMode entity.SyncMode,
 	actionState *state.Async,
 ) Model {
 	return Model{
@@ -49,6 +56,7 @@ func NewEdit(
 		Address:     address,
 		PublicKey:   publicKey,
 		PrivateKey:  privateKey,
+		SyncMode:    syncMode,
 		EditField:   FieldHostname,
 		Editing:     true,
 		ActionState: actionState,
@@ -60,6 +68,7 @@ type SubmitMsg struct {
 	Address    string
 	PublicKey  string
 	PrivateKey string
+	SyncMode   entity.SyncMode
 }
 
 type CancelMsg struct{}

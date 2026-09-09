@@ -8,13 +8,40 @@ import (
 	"strings"
 )
 
-func (c *Client) ListVaults(
+func (c *Client) CheckVaultSync(
 	address string,
+	replicaVaultHash string,
 	result any,
 ) error {
-	return c.Get(
+	body := struct {
+		ReplicaVaultHash string `json:"replica_vault_hash"`
+	}{
+		ReplicaVaultHash: replicaVaultHash,
+	}
+
+	return c.Post(
 		address,
-		"/vault",
+		"/vault/sync/check",
+		body,
+		result,
+	)
+}
+
+func (c *Client) VaultSync(
+	address string,
+	replicaVaultHash string,
+	result any,
+) error {
+	body := struct {
+		ReplicaVaultHash string `json:"replica_vault_hash"`
+	}{
+		ReplicaVaultHash: replicaVaultHash,
+	}
+
+	return c.Post(
+		address,
+		"/vault/sync",
+		body,
 		result,
 	)
 }
@@ -68,10 +95,6 @@ func (c *Client) GetRecord(
 	)
 }
 
-// CreateRecordRaw mengirim encrypted record sebagai raw bytes.
-//
-// Tidak menggunakan Post() karena Post() akan melakukan json.Marshal()
-// terhadap []byte dan menghasilkan base64 JSON.
 func (c *Client) CreateRecordRaw(
 	address string,
 	vaultID string,
@@ -92,13 +115,9 @@ func (c *Client) CreateRecordRaw(
 		return "", err
 	}
 
-	return string(body), nil
+	return strings.TrimSpace(string(body)), nil
 }
 
-// UpdateRecordRaw mengirim encrypted record sebagai raw bytes.
-//
-// Tidak menggunakan Put() karena Put() akan melakukan json.Marshal()
-// terhadap []byte.
 func (c *Client) UpdateRecordRaw(
 	address string,
 	vaultID string,
