@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"errors"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacpass-core/entity"
 )
@@ -8,6 +10,16 @@ import (
 type VaultCreatedMsg struct {
 	VaultAccess *entity.VaultAccess
 	Err         error
+}
+
+type VaultUpdatedMsg struct {
+	VaultAccess *entity.VaultAccess
+	Err         error
+}
+
+type VaultDeletedMsg struct {
+	VaultID string
+	Err     error
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
@@ -47,6 +59,46 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.VaultName = ""
 		m.Focus = FocusContent
 		m.ActionState.Success()
+
+	case VaultUpdatedMsg:
+		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
+			return m, nil
+		}
+
+		if msg.VaultAccess != nil {
+			for i := range m.VaultAccessList {
+				if m.VaultAccessList[i].ID == msg.VaultAccess.ID {
+					m.VaultAccessList[i] = *msg.VaultAccess
+					break
+				}
+			}
+		}
+
+		m.VaultName = ""
+		m.Focus = FocusContent
+		m.ActionState.Success()
+
+	case VaultDeletedMsg:
+		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
+			return m, nil
+		}
+
+		for i := range m.VaultAccessList {
+			if m.VaultAccessList[i].VaultID == msg.VaultID {
+				m.VaultAccessList = append(
+					m.VaultAccessList[:i],
+					m.VaultAccessList[i+1:]...,
+				)
+				break
+			}
+		}
+
+		m.normalizeCursor()
+		m.ActionState.Success()
+
+		return m, nil
 
 	case tea.KeyMsg:
 		if m.ScreenState.Loading ||
@@ -89,11 +141,49 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.Cursor++
 		}
 
+	case "e":
+		if len(m.VaultAccessList) == 0 ||
+			m.Cursor >= len(m.VaultAccessList) {
+			return m, nil
+		}
+
+		selectedVaultAccess := m.VaultAccessList[m.Cursor]
+
+		m.Focus = FocusNewVault
+		m.VaultName = selectedVaultAccess.Vault.Name
+		m.Editing = true
+
+	case "delete":
+		if len(m.VaultAccessList) == 0 ||
+			m.Cursor >= len(m.VaultAccessList) {
+			return m, nil
+		}
+
+		selectedVaultAccess := m.VaultAccessList[m.Cursor]
+
+		m.ActionState.Start()
+
+		return m, func() tea.Msg {
+			err := m.VaultServiceTUI.DeleteVault(
+				&selectedVaultAccess.Vault,
+			)
+
+			return VaultDeletedMsg{
+				VaultID: selectedVaultAccess.VaultID,
+				Err:     err,
+			}
+		}
+
 	case "enter":
 		if m.Cursor == len(m.VaultAccessList) {
 			m.Focus = FocusNewVault
 			m.VaultName = ""
+			m.Editing = false
 
+			return m, nil
+		}
+
+		if len(m.VaultAccessList) == 0 {
 			return m, nil
 		}
 
@@ -123,6 +213,7 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "esc", "ctrl+c":
 		m.Focus = FocusContent
 		m.VaultName = ""
+		m.Editing = false
 
 	case "enter":
 		if m.VaultName == "" {
@@ -132,6 +223,35 @@ func (m Model) updateNewVault(msg tea.KeyMsg) (Model, tea.Cmd) {
 		m.ActionState.Start()
 
 		name := m.VaultName
+
+		if m.Editing {
+			if m.Cursor >= len(m.VaultAccessList) {
+				m.ActionState.Fail(
+					errors.New("invalid vault cursor"),
+				)
+				return m, nil
+			}
+
+			selectedVaultAccess := m.VaultAccessList[m.Cursor]
+
+			return m, func() tea.Msg {
+				vault := selectedVaultAccess.Vault
+				vault.Name = name
+
+				err := m.VaultServiceTUI.UpdateVault(
+					&vault,
+				)
+
+				return VaultUpdatedMsg{
+					VaultAccess: &entity.VaultAccess{
+						ID:      selectedVaultAccess.ID,
+						VaultID: selectedVaultAccess.VaultID,
+						Vault:   vault,
+					},
+					Err: err,
+				}
+			}
+		}
 
 		return m, func() tea.Msg {
 			vaultAccessData, err := m.VaultServiceTUI.CreateVault(name)

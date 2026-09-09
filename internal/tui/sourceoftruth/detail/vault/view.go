@@ -51,20 +51,32 @@ func (m Model) viewContent() string {
 }
 
 func (m Model) viewNewVault() string {
+	title := "Add Vault"
+
+	if m.Editing {
+		title = "Edit Vault"
+	}
+
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
-		styles.Title.Render("Add Vault"),
+		styles.Title.Render(title),
 		"",
 		styles.Normal.Render("Name"),
 		"> "+m.VaultName+"_",
 	)
 
 	if m.ActionState.Loading {
+		action := "Creating..."
+
+		if m.Editing {
+			action = "Updating..."
+		}
+
 		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			content,
 			"",
-			styles.Muted.Render("Creating..."),
+			styles.Muted.Render(action),
 		)
 	}
 

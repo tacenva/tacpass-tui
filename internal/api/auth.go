@@ -6,8 +6,9 @@ type EnrollRequest struct {
 }
 
 type EnrollResponse struct {
-	Status    string `json:"status"`
-	AuthToken string `json:"auth_token"`
+	Status      string `json:"status"`
+	AuthToken   string `json:"auth_token"`
+	SoTHostname string `json:"sot_hostname"`
 }
 
 func (c *Client) Enroll(

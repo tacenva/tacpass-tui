@@ -79,61 +79,10 @@ func (s *Service) List() ([]entity.VaultAccess, error) {
 	}
 
 	if s.context.IsRemote {
-		outOfSync, err := s.OutOfSync()
-		if err != nil {
-			return nil, err
-		}
-
-		if outOfSync {
-			return s.Sync()
-		}
+		return s.Sync()
 	}
 
 	return vaultAccessList, nil
-}
-
-func (s *Service) OutOfSync() (bool, error) {
-	vaultPath := s.appDeps.Config.Path(
-		config.NodeDirName,
-		s.context.SelectedSoT.ID,
-		"vault",
-	)
-
-	db := database.New(
-		vaultPath,
-	)
-
-	vaultFile, err := db.RawFile(
-		"vault",
-	)
-	if err != nil {
-		return false, err
-	}
-
-	hashVal, err := vaultFile.Hash()
-	if err != nil {
-		return false, err
-	}
-
-	if !s.context.IsRemote {
-		return false, nil
-	}
-
-	result := struct {
-		OutOfSync bool `json:"out_of_sync"`
-	}{}
-
-	err = s.appDeps.Client.OutOfSync(
-		s.context.SelectedSoT.Address,
-		s.context.SelectedSoT.ID,
-		hashVal,
-		&result,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	return result.OutOfSync, nil
 }
 
 func (s *Service) Sync() ([]entity.VaultAccess, error) {
@@ -265,6 +214,224 @@ func (s *Service) CreateVault(
 	}
 
 	return vaultAccess, nil
+}
+
+func (s *Service) UpdateVault(
+	vault *entity.Vault,
+) error {
+	if vault == nil {
+		return errors.New(
+			"vault cannot be nil",
+		)
+	}
+
+	if vault.ID == "" {
+		return errors.New(
+			"vault id cannot be empty",
+		)
+	}
+
+	if vault.Name == "" {
+		return errors.New(
+			"vault name cannot be empty",
+		)
+	}
+
+	if s.context == nil {
+		return errors.New(
+			"context is nil",
+		)
+	}
+
+	if s.context.SelectedSoT == nil {
+		return errors.New(
+			"selected source of truth is nil",
+		)
+	}
+
+	if s.context.SelectedSoT.Address != "localhost" {
+		var updated entity.Vault
+
+		err := s.appDeps.Client.UpdateVault(
+			s.context.SelectedSoT.Address,
+			vault.ID,
+			struct {
+				Name string `json:"name"`
+			}{
+				Name: vault.Name,
+			},
+			&updated,
+		)
+		if err != nil {
+			return err
+		}
+
+		*vault = updated
+	} else {
+		authUser, err := s.authService.GetUserData(
+			s.context.SelectedSoT.AuthToken,
+		)
+		if err != nil {
+			return err
+		}
+
+		updated, err := s.vaultService.Update(
+			authUser,
+			vault.ID,
+			vault.Name,
+		)
+		if err != nil {
+			return err
+		}
+
+		*vault = *updated
+	}
+
+	db := database.New(
+		s.appDeps.Config.Path(
+			config.NodeDirName,
+			s.context.SelectedSoT.ID,
+			"vault",
+		),
+	)
+
+	vaultFile, err := db.File(
+		"vault",
+		s.masterKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	var vaultAccessList []entity.VaultAccess
+
+	err = vaultFile.FindWhere(
+		&vaultAccessList,
+		func(data map[string]any) bool {
+			vaultID, ok := data["vault_id"]
+
+			return ok && vaultID == vault.ID
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(vaultAccessList) == 0 {
+		return errors.New("vault access not found")
+	}
+
+	vaultAccess := vaultAccessList[0]
+
+	vaultAccess.Vault = *vault
+
+	return vaultFile.Update(
+		&vaultAccess,
+	)
+}
+
+func (s *Service) DeleteVault(
+	vault *entity.Vault,
+) error {
+	if vault == nil {
+		return errors.New(
+			"vault cannot be nil",
+		)
+	}
+
+	if vault.ID == "" {
+		return errors.New(
+			"vault id cannot be empty",
+		)
+	}
+
+	if s.context == nil {
+		return errors.New(
+			"context is nil",
+		)
+	}
+
+	if s.context.SelectedSoT == nil {
+		return errors.New(
+			"selected source of truth is nil",
+		)
+	}
+
+	if s.context.SelectedSoT.Address != "localhost" {
+		err := s.appDeps.Client.DeleteVault(
+			s.context.SelectedSoT.Address,
+			vault.ID,
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		authUser, err := s.authService.GetUserData(
+			s.context.SelectedSoT.AuthToken,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = s.vaultService.Delete(
+			authUser,
+			vault.ID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	db := database.New(
+		s.appDeps.Config.Path(
+			config.NodeDirName,
+			s.context.SelectedSoT.ID,
+			"vault",
+		),
+	)
+
+	vaultFile, err := db.File(
+		"vault",
+		s.masterKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	var vaultAccessList []entity.VaultAccess
+
+	err = vaultFile.FindWhere(
+		&vaultAccessList,
+		func(data map[string]any) bool {
+			vaultID, ok := data["vault_id"]
+
+			return ok && vaultID == vault.ID
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	vaultAccess := vaultAccessList[0]
+	if _, err = vaultFile.Delete(
+		vaultAccess.ID,
+	); err != nil {
+		return err
+	}
+
+	return s.deleteVaultFile(vault.ID)
+}
+
+func (s *Service) deleteVaultFile(vaultId string) error {
+	db := database.New(
+		s.appDeps.Config.Path(
+			config.NodeDirName,
+			s.context.SelectedSoT.ID,
+			"vault",
+		),
+	)
+
+	return db.Delete(vaultId)
 }
 
 func (s *Service) ListRecords(
@@ -698,4 +865,105 @@ func (s *Service) EncryptRecord(
 	}
 
 	return []byte(encrypted), nil
+}
+
+func (s *Service) DeleteRecord(
+	vaultAccess *entity.VaultAccess,
+	record *entity.VaultRecord,
+) error {
+	if vaultAccess == nil {
+		return errors.New(
+			"vault access cannot be nil",
+		)
+	}
+
+	if record == nil {
+		return errors.New(
+			"record cannot be nil",
+		)
+	}
+
+	if vaultAccess.VaultID == "" {
+		return errors.New(
+			"vault id cannot be empty",
+		)
+	}
+
+	if record.ID == "" {
+		return errors.New(
+			"record id cannot be empty",
+		)
+	}
+
+	if s.context == nil {
+		return errors.New(
+			"context is nil",
+		)
+	}
+
+	if s.context.SelectedSoT == nil {
+		return errors.New(
+			"selected source of truth is nil",
+		)
+	}
+
+	if s.context.SelectedSoT.Address == "localhost" {
+		return s.deleteRecordLocally(
+			vaultAccess,
+			record,
+		)
+	}
+
+	return s.deleteRecordRemotely(
+		vaultAccess,
+		record,
+	)
+}
+
+func (s *Service) deleteRecordLocally(
+	vaultAccess *entity.VaultAccess,
+	record *entity.VaultRecord,
+) error {
+	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
+		vaultAccess.VaultKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	db := database.New(
+		s.appDeps.Config.Path(
+			config.NodeDirName,
+			s.context.SelectedSoT.ID,
+			"vault",
+		),
+	)
+
+	vaultFile, err := db.File(
+		vaultAccess.VaultID,
+		string(vaultKey),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = vaultFile.Delete(
+		record.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) deleteRecordRemotely(
+	vaultAccess *entity.VaultAccess,
+	record *entity.VaultRecord,
+) error {
+	return s.appDeps.Client.DeleteRecord(
+		s.context.SelectedSoT.Address,
+		vaultAccess.VaultID,
+		record.ID,
+	)
 }

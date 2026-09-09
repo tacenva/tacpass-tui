@@ -25,14 +25,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if m.Form.Active {
 		switch msg := msg.(type) {
 		case form.SubmitMsg:
-			m.ActionState.Start()
-
 			keypair := keyring.KeyPair{
 				PublicKey:  msg.PublicKey,
 				PrivateKey: msg.PrivateKey,
 			}
 
 			var err error
+			m.ActionState.Start()
 
 			if m.Form.Editing {
 				if len(m.SoTList) == 0 {
@@ -48,20 +47,25 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				err = m.SoTService.Update(&selectedSoT)
 			} else {
 				_, err = m.SoTService.Create(
+					msg.Hostname,
 					msg.Address,
 					keypair,
 				)
 			}
 
 			if err != nil {
+				m.ActionState.Fail(err)
 				return m, nil
 			}
 
 			m.Form = form.Model{}
 
 			if err := m.Load(m.masterKey); err != nil {
+				m.ActionState.Fail(err)
 				return m, nil
 			}
+
+			m.ActionState.Success()
 
 			return m, nil
 
@@ -115,7 +119,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 
 		case "e":
-			if len(m.SoTList) == 0 {
+			if len(m.SoTList) == 0 || m.Cursor >= len(m.SoTList) {
 				return m, nil
 			}
 
@@ -128,6 +132,39 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				selectedSoT.KeyPair.PrivateKey,
 				m.ActionState,
 			)
+
+		case "delete":
+			if len(m.SoTList) == 0 {
+				return m, nil
+			}
+
+			// Cursor terakhir adalah Add row.
+			if m.Cursor >= len(m.SoTList) {
+				return m, nil
+			}
+
+			selectedSoT := m.SoTList[m.Cursor]
+
+			m.ActionState.Start()
+
+			if _, err := m.SoTService.Del(&selectedSoT); err != nil {
+				m.ActionState.Fail(err)
+				return m, nil
+			}
+
+			if err := m.Load(m.masterKey); err != nil {
+				m.ActionState.Fail(err)
+				return m, nil
+			}
+
+			m.ActionState.Success()
+
+			// Pastikan cursor tidak melewati item terakhir setelah delete.
+			if m.Cursor >= len(m.SoTList) {
+				m.Cursor = max(0, len(m.SoTList)-1)
+			}
+
+			return m, nil
 
 		case "enter":
 			if m.Cursor == len(m.SoTList) {

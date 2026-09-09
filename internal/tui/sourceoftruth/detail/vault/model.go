@@ -33,7 +33,9 @@ type Model struct {
 	Focus  Focus
 	Active bool
 
-	VaultName       string
+	VaultName string
+	Editing   bool
+
 	VaultAccessList []entity.VaultAccess
 
 	VaultServiceTUI *vault.Service

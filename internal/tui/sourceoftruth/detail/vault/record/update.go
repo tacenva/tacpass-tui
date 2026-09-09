@@ -60,6 +60,9 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "e":
 		m.startEdit()
 
+	case "delete":
+		m.deleteSelected()
+
 	case "esc":
 		m.ShowPassword = false
 		m.Focus = Unfocus

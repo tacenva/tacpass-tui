@@ -257,3 +257,37 @@ func parseExpiredAt(value string) (time.Time, error) {
 		value,
 	)
 }
+
+func (m *Model) deleteSelected() {
+	record := m.Selected()
+	if record == nil {
+		return
+	}
+
+	m.ActionState.Start()
+
+	err := m.VaultServiceTUI.DeleteRecord(
+		m.SelectedVaultAccess,
+		record,
+	)
+	if err != nil {
+		m.ActionState.Fail(err)
+		return
+	}
+
+	m.Records = append(
+		m.Records[:m.Cursor],
+		m.Records[m.Cursor+1:]...,
+	)
+
+	if m.Cursor >= len(m.Records) {
+		m.Cursor = len(m.Records) - 1
+	}
+
+	if m.Cursor < 0 {
+		m.Cursor = 0
+	}
+
+	m.ShowPassword = false
+	m.ActionState.Success()
+}

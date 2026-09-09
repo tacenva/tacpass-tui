@@ -1,8 +1,11 @@
 package sourceoftruth
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
@@ -49,7 +52,7 @@ func (s *Service) Initialize(
 		return "", nil, err
 	}
 
-	token, err := s.authService.Enroll(
+	_, token, err := s.authService.Enroll(
 		hostname,
 		keyPair.PublicKey,
 		coreEntity.UserStatusApproved,
@@ -100,16 +103,13 @@ func (s *Service) Access(
 		if err != nil {
 			return err
 		}
-
-		// if err := s.appDeps.Config.SetSoTULID(sotULID); err != nil {
-		// 	return err
-		// }
 	}
 
 	return nil
 }
 
 func (s *Service) Create(
+	hostnameAlias string,
 	address string,
 	keypair keyring.KeyPair,
 ) (string, error) {
@@ -148,9 +148,14 @@ func (s *Service) Create(
 		return "", err
 	}
 
+	sotHostname := response.SoTHostname
+	if hostnameAlias != "" {
+		sotHostname = hostnameAlias
+	}
+
 	return s.sotFile.Insert(
 		&entity.SourceOfTruth{
-			Hostname:       hostname,
+			Hostname:       sotHostname,
 			Address:        address,
 			AuthToken:      response.AuthToken,
 			KeyPair:        keypair,
@@ -196,10 +201,59 @@ func (s *Service) List() ([]entity.SourceOfTruth, error) {
 
 	var sotData []entity.SourceOfTruth
 
-	err := s.sotFile.FindAll(&sotData)
+	if err := s.sotFile.FindAll(&sotData); err != nil {
+		return nil, err
+	}
+
+	sort.Slice(sotData, func(i, j int) bool {
+		iLocal := sotData[i].Address == "localhost"
+		jLocal := sotData[j].Address == "localhost"
+
+		if iLocal != jLocal {
+			return iLocal
+		}
+
+		return strings.ToLower(sotData[i].Hostname) <
+			strings.ToLower(sotData[j].Hostname)
+	})
+
+	return sotData, nil
+}
+
+func (s *Service) Del(
+	sot *entity.SourceOfTruth,
+) (*entity.SourceOfTruth, error) {
+	if s.sotFile == nil {
+		return nil, ErrForbidden
+	}
+
+	if sot == nil {
+		return nil, errors.New("source of truth cannot be nil")
+	}
+
+	if sot.ID == "" {
+		return nil, errors.New("source of truth id cannot be empty")
+	}
+
+	var stored entity.SourceOfTruth
+	err := s.sotFile.Find(sot.ID, &stored)
 	if err != nil {
 		return nil, err
 	}
 
-	return sotData, nil
+	if stored.Address == "localhost" {
+		return nil, errors.New("deleting localhost is prohibited")
+	}
+
+	oldData, err := s.sotFile.Delete(stored.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var deleted entity.SourceOfTruth
+	if err := json.Unmarshal(oldData, &deleted); err != nil {
+		return nil, err
+	}
+
+	return &deleted, nil
 }

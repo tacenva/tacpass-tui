@@ -2,6 +2,7 @@ package form
 
 import (
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/tacenva/tacpass-tui/internal/styles"
 	"github.com/tacenva/tacpass-tui/internal/tui/components"
 )
@@ -13,12 +14,18 @@ func (m Model) View() string {
 		title = "Edit Source of Truth"
 	}
 
+	hostname := m.Hostname
+
+	if hostname == "" && !m.Editing {
+		hostname = "Optional, used as alias"
+	}
+
 	rows := []string{
 		styles.Title.Render(title),
 		"",
 		components.FormField(
 			"Hostname",
-			m.Hostname,
+			hostname,
 			m.EditField == FieldHostname,
 		),
 		"",
@@ -60,27 +67,15 @@ func (m Model) viewActionState() string {
 	)
 }
 
-// func (m Model) privateKeyView() string {
-// 	if m.PrivateKey == "" {
-// 		return ""
-// 	}
-
-// 	runes := []rune(m.PrivateKey)
-// 	result := make([]rune, len(runes))
-
-// 	for i := range runes {
-// 		result[i] = '•'
-// 	}
-
-// 	return string(result)
-// }
-
 func (m Model) privateKeyView() string {
 	return m.PrivateKey
 }
 
 func (m Model) Navigation(width int) string {
-	content := components.FormNavigation(m.Width, "Ctrl+S")
+	content := components.FormNavigation(
+		m.Width,
+		"Ctrl+S",
+	)
 
 	return styles.Navigation.
 		Width(width).

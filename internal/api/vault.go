@@ -215,21 +215,37 @@ func (c *Client) doRaw(
 	return body, nil
 }
 
-func (c *Client) OutOfSync(
+func (c *Client) UpdateVault(
 	address string,
 	vaultID string,
-	replicaHash string,
+	body any,
 	result any,
 ) error {
 	path := fmt.Sprintf(
-		"/vault/%s/out-of-sync?hash=%s",
+		"/vault/%s",
 		vaultID,
-		replicaHash,
 	)
 
-	return c.Get(
+	return c.Put(
 		address,
 		path,
+		body,
 		result,
+	)
+}
+
+func (c *Client) DeleteVault(
+	address string,
+	vaultID string,
+) error {
+	path := fmt.Sprintf(
+		"/vault/%s",
+		vaultID,
+	)
+
+	return c.Delete(
+		address,
+		path,
+		nil,
 	)
 }
