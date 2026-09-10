@@ -59,23 +59,6 @@ func (c *Client) CreateVault(
 	)
 }
 
-// func (c *Client) ListRecords(
-// 	address string,
-// 	vaultID string,
-// 	result any,
-// ) error {
-// 	path := fmt.Sprintf(
-// 		"/vault/%s/record",
-// 		vaultID,
-// 	)
-
-// 	return c.Get(
-// 		address,
-// 		path,
-// 		result,
-// 	)
-// }
-
 func (c *Client) GetRecord(
 	address string,
 	vaultID string,

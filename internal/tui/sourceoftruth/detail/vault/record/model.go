@@ -11,10 +11,9 @@ import (
 )
 
 type RecordsLoadedMsg struct {
-	VaultAccess *entity.VaultAccess
-	Records     []entity.VaultRecord
-	NeedSync    bool
-	Err         error
+	Records  []entity.VaultRecord
+	NeedSync bool
+	Err      error
 }
 
 type Focus int
@@ -71,26 +70,27 @@ func New(
 	vaultServiceTUI *vault.Service,
 	ScreenState *state.Async,
 	ActionState *state.Async,
+	SelectedVaultAccess *entity.VaultAccess,
 ) Model {
 	return Model{
 		Records: []entity.VaultRecord{},
 
 		Cursor: 0,
 		Focus:  FocusContent,
-		Active: false,
+		Active: true,
 
 		VaultServiceTUI: vaultServiceTUI,
 		context:         context,
 
 		ScreenState: ScreenState,
 		ActionState: ActionState,
+
+		SelectedVaultAccess: SelectedVaultAccess,
 	}
 }
 
-func (m Model) Load(
-	selectedVaultAccess *entity.VaultAccess,
-) tea.Cmd {
-	if selectedVaultAccess == nil {
+func (m Model) Load() tea.Cmd {
+	if m.SelectedVaultAccess == nil {
 		return nil
 	}
 
@@ -98,14 +98,13 @@ func (m Model) Load(
 
 	return func() tea.Msg {
 		vaultRecords, needSync, err := m.VaultServiceTUI.ListRecords(
-			selectedVaultAccess,
+			m.SelectedVaultAccess,
 		)
 
 		return RecordsLoadedMsg{
-			VaultAccess: selectedVaultAccess,
-			Records:     vaultRecords,
-			NeedSync:    needSync,
-			Err:         err,
+			Records:  vaultRecords,
+			NeedSync: needSync,
+			Err:      err,
 		}
 	}
 }

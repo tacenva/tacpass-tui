@@ -255,6 +255,27 @@ func (s *Service) CreateVault(
 		if err != nil {
 			return nil, err
 		}
+
+		db := database.New(
+			s.appDeps.Config.Path(
+				config.NodeDirName,
+				s.context.SelectedSoT.ID,
+				"vault",
+			),
+		)
+
+		vaultKey, err := s.context.SelectedSoT.KeyPair.Open(vaultAccess.VaultKey)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := db.File(
+			vaultAccess.VaultID,
+			string(vaultKey),
+			database.FileModeOpenOrCreate,
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	return vaultAccess, nil

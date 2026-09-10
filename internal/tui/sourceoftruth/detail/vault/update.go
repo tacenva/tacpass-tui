@@ -210,13 +210,10 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.VaultServiceTUI,
 			m.ScreenState,
 			m.ActionState,
-		)
-
-		m.VaultRecordTUI.Active = true
-
-		return m, m.VaultRecordTUI.Load(
 			&selectedVaultAccess,
 		)
+
+		return m, m.VaultRecordTUI.Load()
 
 	case "esc":
 		m.Focus = FocusNone
