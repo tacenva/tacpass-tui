@@ -5,11 +5,11 @@ import (
 
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/auth"
+	"github.com/tacenva/tacpass-core/config"
 	coreEntity "github.com/tacenva/tacpass-core/entity"
 	vaultCore "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/app"
 	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/config"
 	"github.com/tacenva/tacpass-tui/internal/entity"
 )
 
