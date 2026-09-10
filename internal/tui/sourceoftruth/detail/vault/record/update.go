@@ -1,8 +1,12 @@
 package vaultrecord
 
 import (
+	"errors"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+var ErrFileEmpty = errors.New("no record yet")
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -11,7 +15,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.Height = msg.Height
 
 	case RecordsLoadedMsg:
-		if msg.Err != nil {
+		if msg.Err != nil && msg.Err != ErrFileEmpty {
 			m.ScreenState.Fail(msg.Err)
 			return m, nil
 		}
