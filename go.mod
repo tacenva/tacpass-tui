@@ -5,8 +5,8 @@ go 1.26.5
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/tacenva/database v1.0.0-alpha.1
-	github.com/tacenva/tacpass-core v1.0.0-alpha.1
+	github.com/tacenva/database v1.0.0-alpha.2
+	github.com/tacenva/tacpass-core v1.0.0-alpha.2
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
