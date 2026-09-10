@@ -10,13 +10,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+
 		return m, nil
 
 	case PermissionsLoadedMsg:
-		if !m.ScreenState.Loading {
-			return m, nil
-		}
-
 		if msg.Err != nil {
 			m.ScreenState.Fail(msg.Err)
 			return m, nil
@@ -49,6 +46,26 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 
 		m.closeForm()
+
+		return m, m.Load()
+
+	case PermissionDeletedMsg:
+		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
+			return m, nil
+		}
+
+		m.ActionState.Success()
+
+		return m, m.Load()
+
+	case PermissionRevokeMsg:
+		if msg.Err != nil {
+			m.ActionState.Fail(msg.Err)
+			return m, nil
+		}
+
+		m.ActionState.Success()
 
 		return m, m.Load()
 
@@ -118,19 +135,59 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.Cursor++
 		}
 
+	case "delete":
+		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
+			m.ActionState.Start()
+
+			permission := m.Permissions[m.Cursor]
+
+			return m, func() tea.Msg {
+				err := m.service.DeleteAccessControl(
+					permission.ID,
+				)
+
+				return PermissionDeletedMsg{
+					PermissionID: permission.ID,
+					Err:          err,
+				}
+			}
+		}
+
+	case "r":
+		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
+			m.ActionState.Start()
+
+			permission := m.Permissions[m.Cursor]
+
+			return m, func() tea.Msg {
+				err := m.service.Revoke(
+					permission.ID,
+				)
+
+				return PermissionRevokeMsg{
+					Err: err,
+				}
+			}
+		}
+
 	case "enter":
 		if m.Cursor == len(m.Permissions) {
 			m.openNewForm()
+
 			return m, nil
 		}
 
 		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
-			return m, m.openUsers(m.Permissions[m.Cursor])
+			return m, m.openUsers(
+				m.Permissions[m.Cursor],
+			)
 		}
 
 	case "e":
 		if m.Cursor >= 0 && m.Cursor < len(m.Permissions) {
-			m.openUpdateForm(m.Permissions[m.Cursor])
+			m.openUpdateForm(
+				m.Permissions[m.Cursor],
+			)
 		}
 
 	case "esc":
@@ -145,6 +202,7 @@ func (m Model) updateForm(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
 		m.closeForm()
+
 		return m, nil
 
 	case "up", "k":
@@ -174,10 +232,9 @@ func (m Model) updateForm(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "enter":
 		if m.FormCursor == 0 {
 			m.FormCursor = 1
+
 			return m, nil
 		}
-
-		return m, m.saveForm()
 
 	case "ctrl+s":
 		return m, m.saveForm()
@@ -186,7 +243,10 @@ func (m Model) updateForm(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.FormCursor == 0 {
 		switch msg.Type {
 		case tea.KeyRunes:
-			m.FormName = append(m.FormName, msg.Runes...)
+			m.FormName = append(
+				m.FormName,
+				msg.Runes...,
+			)
 		}
 
 		if msg.Type == tea.KeyBackspace ||
@@ -219,15 +279,34 @@ func (m *Model) saveForm() tea.Cmd {
 	switch m.FormMode {
 	case FormNew:
 		return func() tea.Msg {
-			permission, keyPair, err := m.service.Create(
-				name,
-				privilege,
-			)
+			vaultAccessList, permission, keyPair, err :=
+				m.service.Create(
+					name,
+					privilege,
+				)
+
+			if err != nil {
+				return PermissionSavedMsg{
+					Err: err,
+				}
+			}
+
+			if err := m.service.GrantPrivilege(
+				permission.ID,
+				vaultAccessList,
+				keyPair,
+			); err != nil {
+				return PermissionSavedMsg{
+					Permission: permission,
+					KeyPair:    keyPair,
+					Err:        err,
+				}
+			}
 
 			return PermissionSavedMsg{
 				Permission: permission,
 				KeyPair:    keyPair,
-				Err:        err,
+				Err:        nil,
 			}
 		}
 
@@ -267,7 +346,9 @@ func (m *Model) saveForm() tea.Cmd {
 				}
 			}
 
-			return PermissionSavedMsg{}
+			return PermissionSavedMsg{
+				Err: nil,
+			}
 		}
 	}
 

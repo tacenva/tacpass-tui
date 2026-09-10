@@ -12,9 +12,9 @@ import (
 	coreEntity "github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/permission"
 	"github.com/tacenva/tacpass-core/util/keyring"
-	"github.com/tacenva/tacpass-tui/internal/api"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/operations/api"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/entity"
 )
 
 var (

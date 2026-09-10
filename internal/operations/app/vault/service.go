@@ -8,9 +8,9 @@ import (
 	"github.com/tacenva/tacpass-core/config"
 	coreEntity "github.com/tacenva/tacpass-core/entity"
 	vaultCore "github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
+	"github.com/tacenva/tacpass-tui/internal/operations/entity"
 )
 
 var (

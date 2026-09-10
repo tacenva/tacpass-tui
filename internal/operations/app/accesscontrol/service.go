@@ -7,16 +7,18 @@ import (
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/util/keyring"
+	coreVault "github.com/tacenva/tacpass-core/vault"
 
-	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
 )
 
 type Service struct {
 	appDeps *app.Deps
 	context *app.Context
 
-	coreACService *coreAC.Service
-	authService   *auth.Service
+	coreACService    *coreAC.Service
+	coreVaultService *coreVault.Service
+	authService      *auth.Service
 }
 
 func NewService(
@@ -90,10 +92,10 @@ func (s *Service) Get(
 func (s *Service) Create(
 	name string,
 	privilege entity.Privilege,
-) (*entity.Permission, *keyring.KeyPair, error) {
+) ([]entity.VaultAccess, *entity.Permission, *keyring.KeyPair, error) {
 	if s.context.IsRemote {
 		if s.context.SelectedSoT == nil {
-			return nil, nil, fmt.Errorf(
+			return nil, nil, nil, fmt.Errorf(
 				"selected source of truth is nil",
 			)
 		}
@@ -104,15 +106,15 @@ func (s *Service) Create(
 			privilege,
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
-		return result.Permission, result.KeyPair, nil
+		return result.VaultAccessList, result.Permission, result.KeyPair, nil
 	}
 
 	authUser, err := s.authUser()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	return s.coreACService.Create(
@@ -286,4 +288,80 @@ func (s *Service) RevokeUser(
 		authUser,
 		userID,
 	)
+}
+
+func (s *Service) DeleteAccessControl(
+	id string,
+) error {
+	if s.context.IsRemote {
+		if s.context.SelectedSoT == nil {
+			return fmt.Errorf(
+				"selected source of truth is nil",
+			)
+		}
+
+		return s.appDeps.Client.DeleteAccessControl(
+			s.context.SelectedSoT.Address,
+			id,
+		)
+	}
+
+	authUser, err := s.authUser()
+	if err != nil {
+		return err
+	}
+
+	return s.coreACService.DeletePermission(
+		authUser,
+		id,
+	)
+}
+
+func (s *Service) GrantPrivilege(
+	id string,
+	myVaultAccessList []entity.VaultAccess,
+	keyPair *keyring.KeyPair,
+) error {
+	newVaultAccessList := make([]entity.VaultAccess, 0, len(myVaultAccessList))
+
+	for _, vaultAccess := range myVaultAccessList {
+		vaultKey, err := s.context.SelectedSoT.KeyPair.Open(vaultAccess.VaultKey)
+		if err != nil {
+			return err
+		}
+
+		encryptedVaultKey, err := keyPair.Seal(vaultKey)
+		if err != nil {
+			return err
+		}
+
+		newVaultAccessList = append(
+			newVaultAccessList,
+			entity.VaultAccess{
+				VaultID:      vaultAccess.VaultID,
+				PermissionID: id,
+				VaultKey:     encryptedVaultKey,
+			},
+		)
+	}
+
+	if s.context.IsRemote {
+		if s.context.SelectedSoT == nil {
+			return fmt.Errorf(
+				"selected source of truth is nil",
+			)
+		}
+
+		return s.appDeps.Client.GrantVaultAccess(
+			s.context.SelectedSoT.Address,
+			newVaultAccessList,
+		)
+	}
+
+	authUser, err := s.authUser()
+	if err != nil {
+		return err
+	}
+
+	return s.coreACService.GrantPrivilege(authUser, newVaultAccessList)
 }

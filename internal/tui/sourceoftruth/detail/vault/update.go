@@ -3,11 +3,10 @@ package vault
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-tui/util/debug"
+	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 )
 
 type VaultCreatedMsg struct {
@@ -48,14 +47,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-		data, err := json.Marshal(msg.VaultAccessList)
+		_, err := json.Marshal(msg.VaultAccessList)
 		if err != nil {
-			debug.Error(fmt.Sprintf(
-				"failed to marshal vault access list: %v",
-				err,
-			))
-		} else {
-			debug.Print(string(data))
+			m.ScreenState.Fail(err)
 		}
 
 		m.VaultAccessList = msg.VaultAccessList
@@ -210,6 +204,13 @@ func (m Model) updateContent(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 		selectedVaultAccess := m.VaultAccessList[m.Cursor]
+
+		m.VaultRecordTUI = vaultrecord.New(
+			m.context,
+			m.VaultServiceTUI,
+			m.ScreenState,
+			m.ActionState,
+		)
 
 		m.VaultRecordTUI.Active = true
 

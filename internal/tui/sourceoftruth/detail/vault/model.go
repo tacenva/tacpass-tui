@@ -5,9 +5,9 @@ import (
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	coreVault "github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/app/vault"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
@@ -78,12 +78,12 @@ func New(
 		VaultAccessList: []entity.VaultAccess{},
 		VaultServiceTUI: vaultServiceTUI,
 
-		VaultRecordTUI: vaultrecord.New(
-			context,
-			vaultServiceTUI,
-			screenState,
-			actionState,
-		),
+		// VaultRecordTUI: vaultrecord.New(
+		// 	context,
+		// 	vaultServiceTUI,
+		// 	screenState,
+		// 	actionState,
+		// ),
 
 		ScreenState: screenState,
 		ActionState: actionState,

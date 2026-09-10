@@ -51,10 +51,15 @@ func (m Model) viewSidebar() string {
 		rows = append(rows, row)
 	}
 
-	return styles.Sidebar.Render(
+	content := append(
+		[]string{styles.Title.PaddingBottom(1).Render("Menu")},
+		rows...,
+	)
+
+	return styles.Sidebar.PaddingBottom(3).Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			rows...,
+			content...,
 		),
 	)
 }
@@ -68,7 +73,7 @@ func (m Model) viewContent() string {
 		return m.accessControlTUI.View()
 
 	case 2:
-		return styles.Muted.Render("Setting")
+		return styles.Muted.PaddingLeft(1).Render("Setting is not available yet")
 	}
 
 	return ""

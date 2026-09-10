@@ -3,8 +3,8 @@ package app
 import (
 	"github.com/tacenva/database"
 	"github.com/tacenva/tacpass-core/config"
-	"github.com/tacenva/tacpass-tui/internal/api"
-	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/operations/api"
+	"github.com/tacenva/tacpass-tui/internal/operations/entity"
 	"gorm.io/gorm"
 )
 

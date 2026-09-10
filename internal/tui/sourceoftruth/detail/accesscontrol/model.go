@@ -9,8 +9,8 @@ import (
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/util/keyring"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/app/accesscontrol"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/accesscontrol"
 	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
@@ -44,6 +44,15 @@ type PermissionSavedMsg struct {
 	Permission *entity.Permission
 	KeyPair    *keyring.KeyPair
 	Err        error
+}
+
+type PermissionDeletedMsg struct {
+	PermissionID string
+	Err          error
+}
+
+type PermissionRevokeMsg struct {
+	Err error
 }
 
 type Model struct {

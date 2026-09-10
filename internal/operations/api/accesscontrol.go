@@ -10,8 +10,9 @@ import (
 )
 
 type AccessControlCreateResponse struct {
-	Permission *entity.Permission `json:"permission"`
-	KeyPair    *keyring.KeyPair   `json:"keypair"`
+	VaultAccessList []entity.VaultAccess `json:"vault_access"`
+	Permission      *entity.Permission   `json:"permission"`
+	KeyPair         *keyring.KeyPair     `json:"keypair"`
 }
 
 func (c *Client) ListAccessControls(
@@ -179,13 +180,40 @@ func (c *Client) RevokeAccessControl(
 		)
 	}
 
+	if err := c.Post(
+		address,
+		"/access-control/"+url.PathEscape(id)+"/revoke",
+		nil,
+		nil,
+	); err != nil {
+		return fmt.Errorf(
+			"revoke access control: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteAccessControl(
+	address string,
+	id string,
+) error {
+	id = strings.TrimSpace(id)
+
+	if id == "" {
+		return fmt.Errorf(
+			"access control id is required",
+		)
+	}
+
 	if err := c.Delete(
 		address,
 		"/access-control/"+url.PathEscape(id),
 		nil,
 	); err != nil {
 		return fmt.Errorf(
-			"revoke access control: %w",
+			"delete access control: %w",
 			err,
 		)
 	}
@@ -277,4 +305,29 @@ func (c *Client) RevokeAccessControlUser(
 	}
 
 	return &user, nil
+}
+
+func (c *Client) GrantVaultAccess(
+	address string,
+	vaultAccessList []entity.VaultAccess,
+) error {
+	if len(vaultAccessList) == 0 {
+		return fmt.Errorf(
+			"vault access list is required",
+		)
+	}
+
+	if err := c.Post(
+		address,
+		"/access-control/vault-access",
+		vaultAccessList,
+		nil,
+	); err != nil {
+		return fmt.Errorf(
+			"grant vault access: %w",
+			err,
+		)
+	}
+
+	return nil
 }

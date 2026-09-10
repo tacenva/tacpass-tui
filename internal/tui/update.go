@@ -53,7 +53,7 @@ func (m Model) updateLogin(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 		err := m.sotService.Access(m.Input)
 		if err != nil {
-			m.ErrorMessage = "Invalid master password"
+			m.ErrorMessage = err.Error()
 			m.Input = ""
 			return m, nil
 		}

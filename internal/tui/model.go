@@ -3,8 +3,8 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	coreApp "github.com/tacenva/tacpass-core/app"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	SoTService "github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	SoTService "github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth"
 )
 

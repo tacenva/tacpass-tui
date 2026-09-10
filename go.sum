@@ -42,10 +42,10 @@ github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwp
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
-github.com/tacenva/database v0.2.0 h1:IpOpz77DPKuBjZvgeiy6nUF/TTUzqAW0otdCrpBnaJk=
-github.com/tacenva/database v0.2.0/go.mod h1:UPFLkwRDCP0m3pad2TpMZeJqk1F7bW0EQc1JUn3lOGs=
-github.com/tacenva/tacpass-core v0.2.0 h1:zTqbEzSAFdQ1MtxJQUX//vNixnbbV/xYY3U0SX7bqv0=
-github.com/tacenva/tacpass-core v0.2.0/go.mod h1:v47BmkknIlfIHt6ASjhXRuaRBZW/w5GaFv3r2FKN/bA=
+github.com/tacenva/database v1.0.0-alpha.1 h1:ngDoKtVD0aVU1X84JXSwLq/wxQ8/CTO6ClgCLOvPsks=
+github.com/tacenva/database v1.0.0-alpha.1/go.mod h1:UPFLkwRDCP0m3pad2TpMZeJqk1F7bW0EQc1JUn3lOGs=
+github.com/tacenva/tacpass-core v1.0.0-alpha.1 h1:2huw9mchHAVQ9vMAhA5BtjzLi9W0nmxcjDHsXNgowT4=
+github.com/tacenva/tacpass-core v1.0.0-alpha.1/go.mod h1:JefT1eYgdd3pCikmLIDTE6x69CJzpLqSQF1vV+HsWKM=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavMF/ppJZNG9ZpyihvCd0w101no=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=
 golang.org/x/crypto v0.56.0 h1:GUh5Ii4J5jtcseSMiRqr1jXCNHoxjeV9Fmekc2oLy6Y=

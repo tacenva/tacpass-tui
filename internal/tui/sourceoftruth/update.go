@@ -7,8 +7,8 @@ import (
 	"github.com/tacenva/tacpass-core/config"
 	"github.com/tacenva/tacpass-core/util/keyring"
 
-	"github.com/tacenva/tacpass-tui/internal/api"
-	"github.com/tacenva/tacpass-tui/internal/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/api"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/form"
 )

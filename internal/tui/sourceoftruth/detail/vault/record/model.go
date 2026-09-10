@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/app/vault"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/vault"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 

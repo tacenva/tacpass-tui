@@ -2,16 +2,14 @@ package sourceoftruth
 
 import (
 	"encoding/json"
-	"fmt"
 
 	coreApp "github.com/tacenva/tacpass-core/app"
-	"github.com/tacenva/tacpass-tui/internal/app"
-	"github.com/tacenva/tacpass-tui/internal/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/entity"
+	"github.com/tacenva/tacpass-tui/internal/operations/app"
+	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
+	"github.com/tacenva/tacpass-tui/internal/operations/entity"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/form"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
-	"github.com/tacenva/tacpass-tui/util/debug"
 )
 
 type Model struct {
@@ -60,26 +58,11 @@ func (m *Model) Load(masterKey string) error {
 		return err
 	}
 
-	debug.Event("sot-list", map[string]any{
-		"count": len(soTList),
-	})
-
-	for i, sot := range soTList {
-		data, err := json.Marshal(sot)
+	for _, sot := range soTList {
+		_, err := json.Marshal(sot)
 		if err != nil {
-			debug.Error(fmt.Sprintf(
-				"failed to marshal sot index=%d error=%v",
-				i,
-				err,
-			))
 			continue
 		}
-
-		debug.Print(fmt.Sprintf(
-			"sot index=%d data=%s",
-			i,
-			data,
-		))
 	}
 
 	m.SoTList = soTList

@@ -195,31 +195,36 @@ func (m Model) BreadcrumbItems() []string {
 }
 
 func (m Model) Navigation() string {
+	var content string
 	switch m.Focus {
 	case FocusForm:
-		return components.FormNavigation(
+		content = components.FormNavigation(
 			m.Width,
 			"↵",
 		)
 
 	case FocusUsers:
-		return m.UserList.Navigation()
+		content = m.UserList.Navigation()
 
 	case FocusCreatedKey:
-		return styles.NavigationItems(
+		content = styles.NavigationItems(
 			m.Width,
 			styles.Key("↑↓", "Navigate"),
 			styles.Key("Esc", "Back"),
 		)
 
 	default:
-		return styles.NavigationItems(
+		var extraItems []string
+		if m.Cursor < len(m.Permissions) {
+			extraItems = append(
+				[]string{styles.Key("r", "Revoke")},
+				components.DeleteEditItems...,
+			)
+		}
+		content = components.Navigation(
 			m.Width,
-			styles.Key("↑↓", "Navigate"),
-			styles.Key("↵", "Select"),
-			styles.Key("e", "Edit"),
-			styles.Key("Esc", "Back"),
-			styles.Key("q", "Quit"),
+			extraItems...,
 		)
 	}
+	return content
 }
