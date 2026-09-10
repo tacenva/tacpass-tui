@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p dist
 
-          NAME="tacpassd-${GOOS}-${GOARCH}"
+          NAME="tacpass-tui-${GOOS}-${GOARCH}"
 
           if [ "$GOOS" = "windows" ]; then
             NAME="${NAME}.exe"
