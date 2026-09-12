@@ -109,7 +109,7 @@ func (m Model) Sync() tea.Cmd {
 	m.ScreenState.Start()
 
 	return func() tea.Msg {
-		vaultAccessList, err := m.VaultServiceTUI.Sync()
+		vaultAccessList, err := m.VaultServiceTUI.Remote.Sync()
 
 		return VaultsLoadedMsg{
 			VaultAccessList: vaultAccessList,

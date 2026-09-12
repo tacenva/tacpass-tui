@@ -4,13 +4,13 @@ import (
 	"errors"
 
 	"github.com/tacenva/database"
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/config"
-	coreEntity "github.com/tacenva/tacpass-core/entity"
-	vaultCore "github.com/tacenva/tacpass-core/vault"
 	"github.com/tacenva/tacpass-tui/internal/operations/app"
 	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/operations/entity"
+
+	"github.com/tacenva/tacpass-core/auth"
+	coreEntity "github.com/tacenva/tacpass-core/entity"
+	vaultCore "github.com/tacenva/tacpass-core/vault"
+	operationsEntity "github.com/tacenva/tacpass-tui/internal/operations/entity"
 )
 
 var (
@@ -18,12 +18,11 @@ var (
 )
 
 type Service struct {
-	appDeps      *app.Deps
-	context      *app.Context
-	masterKey    string
-	vaultService *vaultCore.Service
-	authService  *auth.Service
-	sotService   *sourceoftruth.Service
+	context   *app.Context
+	masterKey string
+
+	local  *localService
+	Remote *remoteService
 }
 
 func NewService(
@@ -35,12 +34,22 @@ func NewService(
 	sotService *sourceoftruth.Service,
 ) *Service {
 	return &Service{
-		appDeps:      appDeps,
-		context:      context,
-		masterKey:    masterKey,
-		authService:  authService,
-		vaultService: vaultService,
-		sotService:   sotService,
+		context:   context,
+		masterKey: masterKey,
+
+		local: NewLocalService(
+			appDeps,
+			context,
+			vaultService,
+			authService,
+		),
+
+		Remote: NewRemoteService(
+			appDeps,
+			context,
+			masterKey,
+			sotService,
+		),
 	}
 }
 
@@ -50,262 +59,79 @@ func (s *Service) List() ([]coreEntity.VaultAccess, bool, error) {
 	}
 
 	if s.context.SelectedSoT == nil {
-		return nil, false, errors.New("selected source of truth is nil")
+		return nil, false, errors.New(
+			"selected source of truth is nil",
+		)
 	}
 
-	var vaultAccessList []coreEntity.VaultAccess
-
-	if s.context.IsRemote {
-		switch s.context.SelectedSoT.SyncMode {
-		case entity.SyncModeManual:
-			needSync, err := s.needSync()
-			return vaultAccessList, needSync, err
-
-		case entity.SyncModeAuto:
-			vaultAccessList, err := s.Sync()
-			if err != nil {
-				return nil, false, err
-			}
-
-			return vaultAccessList, false, nil
-		}
-	} else {
-		authUser, err := s.authService.GetUserData(
-			s.context.SelectedSoT.AuthToken,
-		)
+	if !s.context.IsRemote {
+		vaultAccessList, err := s.local.List()
 		if err != nil {
 			return nil, false, err
 		}
 
-		vaultAccessList, err = s.vaultService.VaultAccessList(authUser)
+		return vaultAccessList, false, nil
+	}
+
+	switch s.context.SelectedSoT.SyncMode {
+	case operationsEntity.SyncModeManual:
+		needSync, err := s.Remote.NeedSync()
 		if err != nil {
 			return nil, false, err
 		}
-	}
 
-	return vaultAccessList, false, nil
-}
+		return nil, needSync, nil
 
-func (s *Service) needSync() (bool, error) {
-	var result struct {
-		NeedSync bool `json:"need_sync"`
-	}
-
-	err := s.appDeps.Client.CheckVaultSync(
-		s.context.SelectedSoT.Address,
-		s.context.SelectedSoT.HashSync,
-		&result,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	return result.NeedSync, nil
-}
-
-func (s *Service) Sync() ([]coreEntity.VaultAccess, error) {
-	var result struct {
-		NeedSync        bool                     `json:"need_sync"`
-		ServerVaultHash string                   `json:"server_vault_hash"`
-		VaultAccessList []coreEntity.VaultAccess `json:"vault_access_list,omitempty"`
-	}
-
-	err := s.appDeps.Client.VaultSync(
-		s.context.SelectedSoT.Address,
-		s.context.SelectedSoT.HashSync,
-		&result,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	vaultFile, err := db.File(
-		"vault",
-		s.masterKey,
-		database.FileModeOpenOrCreate,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if result.NeedSync {
-		vaultAccessPointers := make(
-			[]*coreEntity.VaultAccess,
-			0,
-			len(result.VaultAccessList),
-		)
-
-		for i := range result.VaultAccessList {
-			vaultAccessPointers = append(
-				vaultAccessPointers,
-				&result.VaultAccessList[i],
-			)
-		}
-
-		err = vaultFile.Sync(
-			vaultAccessPointers,
-		)
+	case operationsEntity.SyncModeAuto:
+		vaultAccessList, err := s.Remote.Sync()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		s.context.SelectedSoT.HashSync = result.ServerVaultHash
+		return vaultAccessList, false, nil
 
-		if err = s.sotService.Update(
-			s.context.SelectedSoT,
-		); err != nil {
-			return nil, err
-		}
+	default:
+		return nil, false, nil
 	}
-
-	var vaultAccessList []coreEntity.VaultAccess
-
-	err = vaultFile.FindAll(
-		&vaultAccessList,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return vaultAccessList, nil
-}
-
-func (s *Service) createVaultRemotely(
-	vaultName string,
-) (*coreEntity.VaultAccess, error) {
-	var vaultAccess coreEntity.VaultAccess
-
-	body := struct {
-		Name string `json:"name"`
-	}{
-		Name: vaultName,
-	}
-
-	err := s.appDeps.Client.CreateVault(
-		s.context.SelectedSoT.Address,
-		body,
-		&vaultAccess,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &vaultAccess, nil
 }
 
 func (s *Service) CreateVault(
 	vaultName string,
 ) (*coreEntity.VaultAccess, error) {
-	var (
-		vaultAccess *coreEntity.VaultAccess
-		err         error
-	)
-
-	if s.context.IsRemote {
-		vaultAccess, err = s.createVaultRemotely(
-			vaultName,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		db := database.New(
-			s.appDeps.Config.Path(
-				config.NodeDirName,
-				s.context.SelectedSoT.ID,
-				"vault",
-			),
-		)
-
-		vaultFile, err := db.File(
-			"vault",
-			s.masterKey,
-			database.FileModeOpenOrCreate,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = vaultFile.Insert(
-			vaultAccess,
-		)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		authUser, err := s.authService.GetUserData(
-			s.context.SelectedSoT.AuthToken,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		vaultAccess, err = s.vaultService.Create(
-			authUser,
-			vaultName,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		db := database.New(
-			s.appDeps.Config.Path(
-				config.NodeDirName,
-				s.context.SelectedSoT.ID,
-				"vault",
-			),
-		)
-
-		vaultKey, err := s.context.SelectedSoT.KeyPair.Open(vaultAccess.VaultKey)
-		if err != nil {
-			return nil, err
-		}
-
-		if _, err := db.File(
-			vaultAccess.VaultID,
-			string(vaultKey),
-			database.FileModeOpenOrCreate,
-		); err != nil {
-			return nil, err
-		}
+	if s.context == nil {
+		return nil, errors.New("context is nil")
 	}
 
-	return vaultAccess, nil
+	if s.context.SelectedSoT == nil {
+		return nil, errors.New(
+			"selected source of truth is nil",
+		)
+	}
+
+	if s.context.IsRemote {
+		return s.Remote.CreateVault(vaultName)
+	}
+
+	return s.local.CreateVault(vaultName)
 }
 
 func (s *Service) UpdateVault(
 	vault *coreEntity.Vault,
 ) error {
 	if vault == nil {
-		return errors.New(
-			"vault cannot be nil",
-		)
+		return errors.New("vault cannot be nil")
 	}
 
 	if vault.ID == "" {
-		return errors.New(
-			"vault id cannot be empty",
-		)
+		return errors.New("vault id cannot be empty")
 	}
 
 	if vault.Name == "" {
-		return errors.New(
-			"vault name cannot be empty",
-		)
+		return errors.New("vault name cannot be empty")
 	}
 
 	if s.context == nil {
-		return errors.New(
-			"context is nil",
-		)
+		return errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -315,104 +141,25 @@ func (s *Service) UpdateVault(
 	}
 
 	if s.context.IsRemote {
-		var updated coreEntity.Vault
-
-		err := s.appDeps.Client.UpdateVault(
-			s.context.SelectedSoT.Address,
-			vault.ID,
-			struct {
-				Name string `json:"name"`
-			}{
-				Name: vault.Name,
-			},
-			&updated,
-		)
-		if err != nil {
-			return err
-		}
-
-		*vault = updated
-
-		db := database.New(
-			s.appDeps.Config.Path(
-				config.NodeDirName,
-				s.context.SelectedSoT.ID,
-				"vault",
-			),
-		)
-
-		vaultFile, err := db.File(
-			"vault",
-			s.masterKey,
-			database.FileModeOpenOrCreate,
-		)
-		if err != nil {
-			return err
-		}
-
-		var vaultAccessList []coreEntity.VaultAccess
-
-		err = vaultFile.FindWhere(
-			&vaultAccessList,
-			func(data map[string]any) bool {
-				vaultID, ok := data["vault_id"]
-
-				return ok && vaultID == vault.ID
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		if len(vaultAccessList) == 0 {
-			return errors.New("vault access not found")
-		}
-
-		vaultAccess := vaultAccessList[0]
-
-		vaultAccess.Vault = *vault
-
-		return vaultFile.Update(
-			&vaultAccess,
-		)
-	} else {
-		authUser, err := s.authService.GetUserData(
-			s.context.SelectedSoT.AuthToken,
-		)
-		if err != nil {
-			return err
-		}
-
-		if _, err = s.vaultService.Update(
-			authUser,
-			vault.ID,
-			vault.Name,
-		); err != nil {
-			return err
-		}
+		return s.Remote.UpdateVault(vault)
 	}
-	return nil
+
+	return s.local.UpdateVault(vault)
 }
 
 func (s *Service) DeleteVault(
 	vault *coreEntity.Vault,
 ) error {
 	if vault == nil {
-		return errors.New(
-			"vault cannot be nil",
-		)
+		return errors.New("vault cannot be nil")
 	}
 
 	if vault.ID == "" {
-		return errors.New(
-			"vault id cannot be empty",
-		)
+		return errors.New("vault id cannot be empty")
 	}
 
 	if s.context == nil {
-		return errors.New(
-			"context is nil",
-		)
+		return errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -422,82 +169,10 @@ func (s *Service) DeleteVault(
 	}
 
 	if s.context.IsRemote {
-		err := s.appDeps.Client.DeleteVault(
-			s.context.SelectedSoT.Address,
-			vault.ID,
-		)
-		if err != nil {
-			return err
-		}
-
-		db := database.New(
-			s.appDeps.Config.Path(
-				config.NodeDirName,
-				s.context.SelectedSoT.ID,
-				"vault",
-			),
-		)
-
-		vaultFile, err := db.File(
-			"vault",
-			s.masterKey,
-			database.FileModeOpenOrCreate,
-		)
-		if err != nil {
-			return err
-		}
-
-		var vaultAccessList []coreEntity.VaultAccess
-
-		err = vaultFile.FindWhere(
-			&vaultAccessList,
-			func(data map[string]any) bool {
-				vaultID, ok := data["vault_id"]
-
-				return ok && vaultID == vault.ID
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		vaultAccess := vaultAccessList[0]
-		if _, err = vaultFile.Delete(
-			vaultAccess.ID,
-		); err != nil {
-			return err
-		}
-
-		return s.deleteVaultFile(vault.ID)
-	} else {
-		authUser, err := s.authService.GetUserData(
-			s.context.SelectedSoT.AuthToken,
-		)
-		if err != nil {
-			return err
-		}
-
-		if err = s.vaultService.Delete(
-			authUser,
-			vault.ID,
-		); err != nil {
-			return err
-		}
+		return s.Remote.DeleteVault(vault)
 	}
 
-	return nil
-}
-
-func (s *Service) deleteVaultFile(vaultId string) error {
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	return db.Delete(vaultId)
+	return s.local.DeleteVault(vault)
 }
 
 func (s *Service) ListRecords(
@@ -516,9 +191,7 @@ func (s *Service) ListRecords(
 	}
 
 	if s.context == nil {
-		return nil, false, errors.New(
-			"context is nil",
-		)
+		return nil, false, errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -527,150 +200,39 @@ func (s *Service) ListRecords(
 		)
 	}
 
-	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
-		vaultAccess.VaultKey,
-	)
+	vaultFile, err := s.openVaultFile(vaultAccess)
 	if err != nil {
-		return nil, false, err
-	}
+		if !s.context.IsRemote ||
+			!errors.Is(err, database.ErrFileNotFound) {
+			return nil, false, err
+		}
 
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	address := s.context.SelectedSoT.Address
-
-	if address == "localhost" {
-		vaultFile, err := db.File(
+		if err := s.Remote.FetchRecordBlob(
 			vaultAccess.VaultID,
-			string(vaultKey),
-			database.FileModeOpenOrCreate,
-		)
-		if err != nil {
-			return nil, false, err
-		}
-
-		var vaultRecords []coreEntity.VaultRecord
-
-		if err := vaultFile.FindAll(&vaultRecords); err != nil {
-			return nil, false, err
-		}
-
-		return vaultRecords, false, nil
-	}
-
-	vaultFile, err := db.File(
-		vaultAccess.VaultID,
-		string(vaultKey),
-		database.FileModeOpen,
-	)
-
-	if err != nil {
-		if !errors.Is(err, database.ErrFileNotFound) {
-			return nil, false, err
-		}
-
-		blob, err := s.appDeps.Client.RecordBlob(
-			address,
-			vaultAccess.VaultID,
-		)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if err := db.Write(
-			vaultAccess.VaultID,
-			blob,
 		); err != nil {
 			return nil, false, err
 		}
 
-		vaultFile, err = db.File(
-			vaultAccess.VaultID,
-			string(vaultKey),
-			database.FileModeOpen,
-		)
+		vaultFile, err = s.openVaultFile(vaultAccess)
 		if err != nil {
 			return nil, false, err
 		}
 	}
 
-	var vaultRecords []coreEntity.VaultRecord
-
-	if err := vaultFile.FindAll(&vaultRecords); err != nil {
-		return nil, false, err
-	}
-
-	version, err := db.GetVersion(
-		vaultAccess.VaultID,
-	)
+	vaultRecords, err := s.local.ListRecords(vaultFile)
 	if err != nil {
 		return nil, false, err
 	}
 
-	var result struct {
-		NeedSync bool   `json:"need_sync"`
-		Version  uint64 `json:"version"`
+	if !s.context.IsRemote {
+		return vaultRecords, false, nil
 	}
 
-	err = s.appDeps.Client.CheckRecordBlob(
-		address,
+	return s.Remote.SyncRecords(
 		vaultAccess.VaultID,
-		version,
-		&result,
+		vaultFile,
+		vaultRecords,
 	)
-	if err != nil {
-		return nil, false, err
-	}
-
-	switch s.context.SelectedSoT.SyncMode {
-	case entity.SyncModeManual:
-		return vaultRecords, result.NeedSync, nil
-
-	case entity.SyncModeAuto:
-		if !result.NeedSync {
-			return vaultRecords, false, nil
-		}
-
-		blob, err := s.appDeps.Client.RecordBlob(
-			address,
-			vaultAccess.VaultID,
-		)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if err := db.Write(
-			vaultAccess.VaultID,
-			blob,
-		); err != nil {
-			return nil, false, err
-		}
-
-		vaultFile, err = db.File(
-			vaultAccess.VaultID,
-			string(vaultKey),
-			database.FileModeOpen,
-		)
-		if err != nil {
-			return nil, false, err
-		}
-
-		vaultRecords = nil
-
-		if err := vaultFile.FindAll(&vaultRecords); err != nil {
-			return nil, false, err
-		}
-
-		return vaultRecords, false, nil
-
-	default:
-		return vaultRecords, false, nil
-	}
 }
 
 func (s *Service) AppendRecord(
@@ -696,9 +258,7 @@ func (s *Service) AppendRecord(
 	}
 
 	if s.context == nil {
-		return nil, errors.New(
-			"context is nil",
-		)
+		return nil, errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -707,27 +267,7 @@ func (s *Service) AppendRecord(
 		)
 	}
 
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
-		vaultAccess.VaultKey,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	vaultFile, err := db.File(
-		vaultAccess.VaultID,
-		string(vaultKey),
-		database.FileModeOpen,
-	)
+	vaultFile, err := s.openVaultFile(vaultAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -737,28 +277,18 @@ func (s *Service) AppendRecord(
 		return nil, err
 	}
 
-	var recordID string
 	if s.context.IsRemote {
-		recordID, err = s.appDeps.Client.CreateRecordRaw(
-			s.context.SelectedSoT.Address,
+		return s.Remote.AppendRecord(
 			vaultAccess.VaultID,
+			record,
 			[]byte(encrypted),
 		)
-		if err != nil {
-			return nil, err
-		}
-
-		record.ID = recordID
-	} else {
-		recordID, err := vaultFile.Insert(record)
-		if err != nil {
-			return nil, err
-		}
-
-		record.ID = recordID
 	}
 
-	return record, nil
+	return s.local.AppendRecord(
+		vaultFile,
+		record,
+	)
 }
 
 func (s *Service) UpdateRecord(
@@ -790,9 +320,7 @@ func (s *Service) UpdateRecord(
 	}
 
 	if s.context == nil {
-		return nil, errors.New(
-			"context is nil",
-		)
+		return nil, errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -801,27 +329,7 @@ func (s *Service) UpdateRecord(
 		)
 	}
 
-	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
-		vaultAccess.VaultKey,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	vaultFile, err := db.File(
-		vaultAccess.VaultID,
-		string(vaultKey),
-		database.FileModeOpen,
-	)
+	vaultFile, err := s.openVaultFile(vaultAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -832,21 +340,17 @@ func (s *Service) UpdateRecord(
 	}
 
 	if s.context.IsRemote {
-		if err := s.appDeps.Client.UpdateRecordRaw(
-			s.context.SelectedSoT.Address,
+		return s.Remote.UpdateRecord(
 			vaultAccess.VaultID,
-			record.ID,
+			record,
 			[]byte(encrypted),
-		); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := vaultFile.Update(record); err != nil {
-			return nil, err
-		}
+		)
 	}
 
-	return record, nil
+	return s.local.UpdateRecord(
+		vaultFile,
+		record,
+	)
 }
 
 func (s *Service) DeleteRecord(
@@ -878,9 +382,7 @@ func (s *Service) DeleteRecord(
 	}
 
 	if s.context == nil {
-		return errors.New(
-			"context is nil",
-		)
+		return errors.New("context is nil")
 	}
 
 	if s.context.SelectedSoT == nil {
@@ -890,8 +392,7 @@ func (s *Service) DeleteRecord(
 	}
 
 	if s.context.IsRemote {
-		if err := s.appDeps.Client.DeleteRecord(
-			s.context.SelectedSoT.Address,
+		if err := s.Remote.DeleteRecord(
 			vaultAccess.VaultID,
 			record.ID,
 		); err != nil {
@@ -899,30 +400,29 @@ func (s *Service) DeleteRecord(
 		}
 	}
 
+	vaultFile, err := s.openVaultFile(vaultAccess)
+	if err != nil {
+		return err
+	}
+
+	return s.local.DeleteRecord(
+		vaultFile,
+		record.ID,
+	)
+}
+
+func (s *Service) openVaultFile(
+	vaultAccess *coreEntity.VaultAccess,
+) (*database.DatabaseFile, error) {
 	vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
 		vaultAccess.VaultKey,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	db := database.New(
-		s.appDeps.Config.Path(
-			config.NodeDirName,
-			s.context.SelectedSoT.ID,
-			"vault",
-		),
-	)
-
-	vaultFile, err := db.File(
+	return s.local.OpenVaultFile(
 		vaultAccess.VaultID,
 		string(vaultKey),
-		database.FileModeOpen,
 	)
-	if err != nil {
-		return err
-	}
-
-	_, err = vaultFile.Delete(record.ID)
-	return err
 }

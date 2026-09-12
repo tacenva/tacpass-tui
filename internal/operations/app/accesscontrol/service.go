@@ -1,8 +1,6 @@
 package accesscontrol
 
 import (
-	"fmt"
-
 	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
@@ -19,6 +17,9 @@ type Service struct {
 	coreACService    *coreAC.Service
 	coreVaultService *coreVault.Service
 	authService      *auth.Service
+
+	remoteService *remoteService
+	localService  *localService
 }
 
 func NewService(
@@ -35,58 +36,20 @@ func NewService(
 	}
 }
 
-func (s *Service) authUser() (*entity.User, error) {
-	if s.context.SelectedSoT == nil {
-		return nil, fmt.Errorf("selected source of truth is nil")
-	}
-
-	return s.authService.GetUserData(
-		s.context.SelectedSoT.AuthToken,
-	)
-}
-
 func (s *Service) List() ([]entity.Permission, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, fmt.Errorf("selected source of truth is nil")
-		}
-
-		return s.appDeps.Client.ListAccessControls(
-			s.context.SelectedSoT.Address,
-		)
+		return s.remoteService.List()
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.coreACService.List(authUser)
+	return s.localService.List()
 }
 
 func (s *Service) Get(
 	id string,
 ) (*entity.Permission, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, fmt.Errorf("selected source of truth is nil")
-		}
-
-		return s.appDeps.Client.GetAccessControl(
-			s.context.SelectedSoT.Address,
-			id,
-		)
+		return s.remoteService.Get(id)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.coreACService.Get(
-		authUser,
-		id,
-	)
+	return s.localService.Get(id)
 }
 
 func (s *Service) Create(
@@ -94,34 +57,9 @@ func (s *Service) Create(
 	privilege entity.Privilege,
 ) ([]entity.VaultAccess, *entity.Permission, *keyring.KeyPair, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, nil, nil, fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		result, err := s.appDeps.Client.CreateAccessControl(
-			s.context.SelectedSoT.Address,
-			name,
-			privilege,
-		)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		return result.VaultAccessList, result.Permission, result.KeyPair, nil
+		return s.remoteService.Create(name, privilege)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return s.coreACService.Create(
-		authUser,
-		name,
-		privilege,
-	)
+	return s.localService.Create(name, privilege)
 }
 
 func (s *Service) ChangeName(
@@ -129,27 +67,9 @@ func (s *Service) ChangeName(
 	name string,
 ) error {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return fmt.Errorf("selected source of truth is nil")
-		}
-
-		return s.appDeps.Client.ChangeAccessControlName(
-			s.context.SelectedSoT.Address,
-			id,
-			name,
-		)
+		return s.remoteService.ChangeName(id, name)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return err
-	}
-
-	return s.coreACService.ChangeName(
-		authUser,
-		id,
-		name,
-	)
+	return s.localService.ChangeName(id, name)
 }
 
 func (s *Service) ChangePrivilege(
@@ -157,164 +77,54 @@ func (s *Service) ChangePrivilege(
 	privilege entity.Privilege,
 ) error {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.ChangeAccessControlPrivilege(
-			s.context.SelectedSoT.Address,
-			id,
-			privilege,
-		)
+		return s.remoteService.ChangePrivilege(id, privilege)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return err
-	}
-
-	return s.coreACService.ChangePrivilege(
-		authUser,
-		id,
-		privilege,
-	)
+	return s.localService.ChangePrivilege(id, privilege)
 }
 
 func (s *Service) Revoke(
 	id string,
 ) error {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.RevokeAccessControl(
-			s.context.SelectedSoT.Address,
-			id,
-		)
+		return s.remoteService.Revoke(id)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return err
-	}
-
-	return s.coreACService.Revoke(
-		authUser,
-		id,
-	)
+	return s.localService.Revoke(id)
 }
 
 func (s *Service) UserList(
 	permissionID string,
 ) ([]entity.User, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.ListAccessControlUsers(
-			s.context.SelectedSoT.Address,
-			permissionID,
-		)
+		return s.remoteService.UserList(permissionID)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.coreACService.UserList(
-		authUser,
-		permissionID,
-	)
+	return s.localService.UserList(permissionID)
 }
 
 func (s *Service) ApproveUser(
 	userID string,
 ) (*entity.User, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.ApproveAccessControlUser(
-			s.context.SelectedSoT.Address,
-			userID,
-		)
+		return s.remoteService.ApproveUser(userID)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.coreACService.ApproveUser(
-		authUser,
-		userID,
-	)
+	return s.localService.ApproveUser(userID)
 }
 
 func (s *Service) RevokeUser(
 	userID string,
 ) (*entity.User, error) {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return nil, fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.RevokeAccessControlUser(
-			s.context.SelectedSoT.Address,
-			userID,
-		)
+		return s.remoteService.RevokeUser(userID)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.coreACService.RevokeUser(
-		authUser,
-		userID,
-	)
+	return s.localService.RevokeUser(userID)
 }
 
 func (s *Service) DeleteAccessControl(
 	id string,
 ) error {
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.DeleteAccessControl(
-			s.context.SelectedSoT.Address,
-			id,
-		)
+		return s.remoteService.DeleteAccessControl(id)
 	}
-
-	authUser, err := s.authUser()
-	if err != nil {
-		return err
-	}
-
-	return s.coreACService.DeletePermission(
-		authUser,
-		id,
-	)
+	return s.localService.DeleteAccessControl(id)
 }
 
 func (s *Service) GrantPrivilege(
@@ -325,7 +135,9 @@ func (s *Service) GrantPrivilege(
 	newVaultAccessList := make([]entity.VaultAccess, 0, len(myVaultAccessList))
 
 	for _, vaultAccess := range myVaultAccessList {
-		vaultKey, err := s.context.SelectedSoT.KeyPair.Open(vaultAccess.VaultKey)
+		vaultKey, err := s.context.SelectedSoT.KeyPair.Open(
+			vaultAccess.VaultKey,
+		)
 		if err != nil {
 			return err
 		}
@@ -346,22 +158,12 @@ func (s *Service) GrantPrivilege(
 	}
 
 	if s.context.IsRemote {
-		if s.context.SelectedSoT == nil {
-			return fmt.Errorf(
-				"selected source of truth is nil",
-			)
-		}
-
-		return s.appDeps.Client.GrantVaultAccess(
-			s.context.SelectedSoT.Address,
+		return s.remoteService.GrantPrivilege(
 			newVaultAccessList,
 		)
 	}
 
-	authUser, err := s.authUser()
-	if err != nil {
-		return err
-	}
-
-	return s.coreACService.GrantPrivilege(authUser, newVaultAccessList)
+	return s.localService.GrantPrivilege(
+		newVaultAccessList,
+	)
 }
