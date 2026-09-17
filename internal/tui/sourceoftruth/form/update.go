@@ -6,9 +6,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/tacenva-services/entity"
+	"github.com/tacenva/tacpass-core/config"
 )
-
-const defaultPort = "49153"
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -148,7 +147,7 @@ func normalizeAddress(address string) string {
 	host = strings.TrimPrefix(host, "http://")
 
 	if _, _, err := net.SplitHostPort(host); err != nil {
-		address += ":" + defaultPort
+		address += ":" + string(config.DefaultPort)
 	}
 
 	return address
