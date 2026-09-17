@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tacenva/tacpass-tui/internal/operations/entity"
+	"github.com/tacenva/tacenva-services/entity"
 )
 
 const defaultPort = "49153"

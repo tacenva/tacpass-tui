@@ -4,9 +4,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/tacenva-services/app"
+	"github.com/tacenva/tacenva-services/app/vault"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-tui/internal/operations/app"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/vault"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 

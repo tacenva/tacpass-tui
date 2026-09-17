@@ -3,8 +3,8 @@ package userlist
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/tacenva/tacenva-services/app/accesscontrol"
 	"github.com/tacenva/tacpass-core/entity"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/accesscontrol"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 

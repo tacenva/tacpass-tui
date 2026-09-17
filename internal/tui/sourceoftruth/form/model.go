@@ -1,7 +1,7 @@
 package form
 
 import (
-	"github.com/tacenva/tacpass-tui/internal/operations/entity"
+	"github.com/tacenva/tacenva-services/entity"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
 

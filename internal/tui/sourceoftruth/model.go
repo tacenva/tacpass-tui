@@ -3,10 +3,10 @@ package sourceoftruth
 import (
 	"encoding/json"
 
+	"github.com/tacenva/tacenva-services/app"
+	"github.com/tacenva/tacenva-services/app/sourceoftruth"
+	"github.com/tacenva/tacenva-services/entity"
 	coreApp "github.com/tacenva/tacpass-core/app"
-	"github.com/tacenva/tacpass-tui/internal/operations/app"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/operations/entity"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail"
 	"github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/form"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"

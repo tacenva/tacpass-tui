@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/tacenva/tacenva-services/app"
+	"github.com/tacenva/tacenva-services/app/accesscontrol"
 	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/util/keyring"
-	"github.com/tacenva/tacpass-tui/internal/operations/app"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/accesscontrol"
 	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )

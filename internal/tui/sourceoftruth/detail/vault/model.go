@@ -2,12 +2,12 @@ package vault
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tacenva/tacenva-services/app"
+	"github.com/tacenva/tacenva-services/app/sourceoftruth"
+	"github.com/tacenva/tacenva-services/app/vault"
 	"github.com/tacenva/tacpass-core/auth"
 	"github.com/tacenva/tacpass-core/entity"
 	coreVault "github.com/tacenva/tacpass-core/vault"
-	"github.com/tacenva/tacpass-tui/internal/operations/app"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/sourceoftruth"
-	"github.com/tacenva/tacpass-tui/internal/operations/app/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )

@@ -5,10 +5,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tacenva/database"
+	"github.com/tacenva/tacenva-services/api"
+	"github.com/tacenva/tacenva-services/app"
 	coreapp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-core/config"
-	"github.com/tacenva/tacpass-tui/internal/operations/api"
-	"github.com/tacenva/tacpass-tui/internal/operations/app"
 	"github.com/tacenva/tacpass-tui/internal/tui"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
