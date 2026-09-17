@@ -33,7 +33,7 @@ func New(
 	deps *app.Deps,
 	coreServices *coreApp.Services,
 ) Model {
-	soTService := SoTService.NewService(deps, coreServices.Auth, coreServices.Permission)
+	soTService := SoTService.NewService(deps, coreServices.Auth, coreServices.AccessControl)
 
 	return Model{
 		Screen:        ScreenLogin,
