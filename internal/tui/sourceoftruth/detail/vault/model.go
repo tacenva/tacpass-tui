@@ -5,9 +5,8 @@ import (
 	"github.com/tacenva/tacenva-services/app"
 	"github.com/tacenva/tacenva-services/app/sourceoftruth"
 	"github.com/tacenva/tacenva-services/app/vault"
-	"github.com/tacenva/tacpass-core/auth"
+	coreApp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-core/entity"
-	coreVault "github.com/tacenva/tacpass-core/vault"
 	vaultrecord "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault/record"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
 )
@@ -55,8 +54,7 @@ func New(
 	appDeps *app.Deps,
 	context *app.Context,
 	masterKey string,
-	coreVaultService *coreVault.Service,
-	authService *auth.Service,
+	coreServices *coreApp.Services,
 	sotService *sourceoftruth.Service,
 	screenState *state.Async,
 	actionState *state.Async,
@@ -65,8 +63,9 @@ func New(
 		appDeps,
 		context,
 		masterKey,
-		coreVaultService,
-		authService,
+		coreServices.Vault,
+		coreServices.VaultRecordService,
+		coreServices.Auth,
 		sotService,
 	)
 
@@ -77,13 +76,6 @@ func New(
 
 		VaultAccessList: []entity.VaultAccess{},
 		VaultServiceTUI: vaultServiceTUI,
-
-		// VaultRecordTUI: vaultrecord.New(
-		// 	context,
-		// 	vaultServiceTUI,
-		// 	screenState,
-		// 	actionState,
-		// ),
 
 		ScreenState: screenState,
 		ActionState: actionState,
@@ -109,7 +101,7 @@ func (m Model) Sync() tea.Cmd {
 	m.ScreenState.Start()
 
 	return func() tea.Msg {
-		vaultAccessList, err := m.VaultServiceTUI.Remote.Sync()
+		vaultAccessList, err := m.VaultServiceTUI.Sync()
 
 		return VaultsLoadedMsg{
 			VaultAccessList: vaultAccessList,

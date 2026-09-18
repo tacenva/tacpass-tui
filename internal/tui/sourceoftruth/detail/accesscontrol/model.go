@@ -7,8 +7,7 @@ import (
 
 	"github.com/tacenva/tacenva-services/app"
 	"github.com/tacenva/tacenva-services/app/accesscontrol"
-	coreAC "github.com/tacenva/tacpass-core/accesscontrol"
-	"github.com/tacenva/tacpass-core/auth"
+	coreApp "github.com/tacenva/tacpass-core/app"
 	"github.com/tacenva/tacpass-core/entity"
 	"github.com/tacenva/tacpass-core/util/keyring"
 	userListTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol/userlist"
@@ -87,16 +86,15 @@ type Model struct {
 func New(
 	appDeps *app.Deps,
 	context *app.Context,
-	coreACService *coreAC.Service,
-	coreAuthService *auth.Service,
+	coreServices *coreApp.Services,
 	ScreenState *state.Async,
 	ActionState *state.Async,
 ) Model {
 	service := accesscontrol.NewService(
 		appDeps,
 		context,
-		coreACService,
-		coreAuthService,
+		coreServices.AccessControl,
+		coreServices.Auth,
 	)
 
 	return Model{

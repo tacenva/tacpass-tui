@@ -3,10 +3,8 @@ package detail
 import (
 	"github.com/tacenva/tacenva-services/app"
 	"github.com/tacenva/tacenva-services/app/sourceoftruth"
-	"github.com/tacenva/tacpass-core/accesscontrol"
-	"github.com/tacenva/tacpass-core/auth"
-	"github.com/tacenva/tacpass-core/vault"
 
+	coreApp "github.com/tacenva/tacpass-core/app"
 	accessControlTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/accesscontrol"
 	vaultTUI "github.com/tacenva/tacpass-tui/internal/tui/sourceoftruth/detail/vault"
 	"github.com/tacenva/tacpass-tui/internal/tui/state"
@@ -43,9 +41,7 @@ func New(
 	appDeps *app.Deps,
 	ctx *app.Context,
 	masterKey string,
-	coreVaultService *vault.Service,
-	authService *auth.Service,
-	coreACService *accesscontrol.Service,
+	coreServices *coreApp.Services,
 	sotService *sourceoftruth.Service,
 	screenState *state.Async,
 	actionState *state.Async,
@@ -54,8 +50,7 @@ func New(
 		appDeps,
 		ctx,
 		masterKey,
-		coreVaultService,
-		authService,
+		coreServices,
 		sotService,
 		screenState,
 		actionState,
@@ -64,8 +59,7 @@ func New(
 	a := accessControlTUI.New(
 		appDeps,
 		ctx,
-		coreACService,
-		authService,
+		coreServices,
 		screenState,
 		actionState,
 	)
