@@ -2,6 +2,7 @@ package form
 
 import (
 	"net"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -147,7 +148,7 @@ func normalizeAddress(address string) string {
 	host = strings.TrimPrefix(host, "http://")
 
 	if _, _, err := net.SplitHostPort(host); err != nil {
-		address += ":" + string(config.DefaultPort)
+		address += ":" + strconv.Itoa(config.DefaultPort)
 	}
 
 	return address
